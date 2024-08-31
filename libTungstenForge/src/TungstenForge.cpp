@@ -10,27 +10,6 @@ namespace wForge
     //    std::vector<std::filesystem::path> sceneFiles;
     //};
 
-    std::optional<std::vector<uint8_t>> TungsrenForge::SceneToBytes(const std::filesystem::path& scenePath)
-    {
-        W_LOG_INFO("{}", scenePath.string());
-        std::ifstream sceneFile(scenePath);
-    
-        if (!sceneFile.is_open())
-        {
-    
-            return {};
-        }
-    
-        std::string line;
-        while (std::getline(sceneFile, line))
-        {
-            W_LOG_INFO_NO_LOCATION(line);
-        }
-    
-        sceneFile.close();
-        return std::vector<uint8_t>();
-    }
-
     TungsrenForge::TungsrenForge()
         : errorList()
     {
@@ -182,5 +161,26 @@ namespace wForge
             errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Locating Project File General Error: {}", e.what()));
             return {};
         }
+    }
+
+    std::optional<std::vector<uint8_t>> TungsrenForge::SceneToBytes(const std::filesystem::path& scenePath)
+    {
+        W_LOG_INFO("{}", scenePath.string());
+        std::ifstream sceneFile(scenePath);
+
+        if (!sceneFile.is_open())
+        {
+
+            return {};
+        }
+
+        std::string line;
+        while (std::getline(sceneFile, line))
+        {
+            W_LOG_INFO_NO_LOCATION(line);
+        }
+
+        sceneFile.close();
+        return std::vector<uint8_t>();
     }
 }
