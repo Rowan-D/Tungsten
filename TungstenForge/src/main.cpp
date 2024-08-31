@@ -11,13 +11,14 @@ int main(int argc, char* argv[])
     
     std::cout << "----------------------------" << std::endl;
     
-    //if (errorList.size() > 0)
-    //{
-    //    std::cout << ANSI_BRIGHT_RED << "Error Count: " << errorList.size() << ANSI_RESET << std::endl;
-    //
-    //    //for (const wForge::BuildError& error : errorList)
-    //    //{
-    //    //    std::cout << std::format("{}: {}", wForge::BuildError::ErrorTypeToString(error.type), error.message) << std::endl;
-    //    //}
-    //}
+    std::vector<wForge::ErrorList::Error> errorList = projectBuilder.errorList.errorList;
+    if (errorList.size() > 0)
+    {
+        std::cout << ANSI_BRIGHT_RED << "Error Count: " << errorList.size() << ANSI_RESET << std::endl;
+    
+        for (const wForge::ErrorList::Error& error : errorList)
+        {
+            std::cout << std::format("{}: {}", error.SeverityToString(), error.message) << std::endl;
+        }
+    }
 }

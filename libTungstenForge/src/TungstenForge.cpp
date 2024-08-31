@@ -10,41 +10,7 @@ namespace wForge
     //    std::vector<std::filesystem::path> sceneFiles;
     //};
 
-    BuildError::BuildError(Sevarity type, const std::string& message, bool logError)
-        : type(type), message(message)
-    {
-        if (logError)
-        {
-            Log();
-        }
-    }
-
-    BuildError::BuildError(Sevarity type, std::string&& message, bool logError)
-        : type(type), message(message)
-    {
-        if (logError)
-        {
-            Log();
-        }
-    }
-
-    void BuildError::Log() const
-    {
-        switch (type)
-        {
-        case Sevarity::Error:
-            W_LOG_ERROR_NO_LOCATION(message);
-            break;
-        case Sevarity::Warning:
-            W_LOG_WARNING_NO_LOCATION(message);
-            break;
-        default:
-            W_ASSERT(false, "Unknown ErrorType!");
-            break;
-        }
-    }
-
-    static std::optional<std::vector<uint8_t>> SceneToBytes(const std::filesystem::path& scenePath, std::vector<BuildError>& errorList)
+    std::optional<std::vector<uint8_t>> TungsrenForge::SceneToBytes(const std::filesystem::path& scenePath)
     {
         W_LOG_INFO("{}", scenePath.string());
         std::ifstream sceneFile(scenePath);
@@ -65,6 +31,11 @@ namespace wForge
         return std::vector<uint8_t>();
     }
 
+    TungsrenForge::TungsrenForge()
+        : errorList()
+    {
+    }
+
     bool TungsrenForge::BuildProject(const std::filesystem::path& projectPath, std::filesystem::path outputDir)
     {
         W_LOG_DEBUG("Build called. Asset path: {} Output path: {}", projectPath.string(), outputDir.string());
@@ -73,7 +44,7 @@ namespace wForge
 
         if (!projectFilePath.has_value())
         {
-            m_errorList.push_back(BuildError(BuildError::Sevarity::Error, "Project File Not Found Error: Tungsten Project File (.wproj) not found!", true));
+            errorList.Log(Severity::Error, ERROR_CODE_TODO, "Project File Not Found Error: Tungsten Project File (.wproj) not found!");
             return false;
         }
 
@@ -86,12 +57,12 @@ namespace wForge
 
         if (projectName != projectFilePath.value().stem().string())
         {
-            m_errorList.push_back(BuildError(BuildError::Sevarity::Warning, fmt::format("Naming mismatch Warning: Project file name \"{}\" should match project name \"{}\"", projectFilePath.value().stem().string(), projectName), true));
+            errorList.Log(Severity::Warning, ERROR_CODE_TODO, fmt::format("Naming mismatch Warning: Project file name \"{}\" should match project name \"{}\"", projectFilePath.value().stem().string(), projectName));
         }
 
         if (projectName != projectDirectoryPath.filename().string())
         {
-            m_errorList.push_back(BuildError(BuildError::Sevarity::Warning, fmt::format("Naming mismatch Warning: Project directory name \"{}\" should match project name \"{}\"", projectFilePath.value().parent_path().filename().string(), projectName), true));
+            errorList.Log(Severity::Warning, ERROR_CODE_TODO, fmt::format("Naming mismatch Warning: Project directory name \"{}\" should match project name \"{}\"", projectFilePath.value().parent_path().filename().string(), projectName));
         }
 
         std::vector<std::string> sceneList = projectFile["scenes"].as<std::vector<std::string>>();
@@ -162,7 +133,7 @@ namespace wForge
                 }
                 else
                 {
-                    m_errorList.push_back(BuildError(BuildError::Sevarity::Error, "Locating Project File Invalid Path Error: The provided path is neither a project file or directory!", true));
+                    errorList.Log(Severity::Error, ERROR_CODE_TODO, "Locating Project File Invalid Path Error: The provided path is neither a project file or directory!");
                     return {};
                 }
 
@@ -177,7 +148,7 @@ namespace wForge
 
                 if (wProjFiles.empty())
                 {
-                    m_errorList.push_back(BuildError(BuildError::Sevarity::Error, "Project File Not Found Error: Tungsten Project File (.wproj) not found!", true));
+                    errorList.Log(Severity::Error, ERROR_CODE_TODO, "Project File Not Found Error: Tungsten Project File (.wproj) not found!");
                     return {};
                 }
                 else if (wProjFiles.size() > 1)
@@ -187,7 +158,7 @@ namespace wForge
                     {
                         wProjFilesList += '\n' + wProjFile.filename().string();
                     }
-                    m_errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Multiple Project File Error: There should be no more than one Tungsten Project File (.wproj) in the project directory. {} were found!{}", wProjFiles.size(), wProjFilesList), true));
+                    errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Multiple Project File Error: There should be no more than one Tungsten Project File (.wproj) in the project directory. {} were found!{}", wProjFiles.size(), wProjFilesList));
                     return {};
                 }
                 else
@@ -197,18 +168,18 @@ namespace wForge
             }
             else
             {
-                m_errorList.push_back(BuildError(BuildError::Sevarity::Error, "Locating Project File Invalid Path Error: project file or directory dose not exist!", true));
+                errorList.Log(Severity::Error, ERROR_CODE_TODO, "Locating Project File Invalid Path Error: project file or directory dose not exist!");
                 return {};
             }
         }
         catch (const std::filesystem::filesystem_error& e)
         {
-            m_errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Locating Project File Filesystem Error: {}", e.what()), true));
+            errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Locating Project File Filesystem Error: {}", e.what()));
             return {};
         }
         catch (const std::exception& e)
         {
-            m_errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Locating Project File General Error: {}", e.what()), true));
+            errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Locating Project File General Error: {}", e.what()));
             return {};
         }
     }
