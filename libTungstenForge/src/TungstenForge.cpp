@@ -44,115 +44,36 @@ namespace wForge
         }
     }
 
-    bool IsValedProjectPath(const std::filesystem::path& projectPath, std::string& errorMessage)
+    static std::optional<std::vector<uint8_t>> SceneToBytes(const std::filesystem::path& scenePath, std::vector<BuildError>& errorList)
     {
-        return true;
-    }
-
-    bool IsValedOutputPath(const std::filesystem::path& outputDir, std::string& errorMessage)
-    {
-        return true;
-    }
-
-    static std::optional<std::filesystem::path> GetProjectPath(std::filesystem::path inputPath, std::vector<BuildError>& errorList)
-    {
-        try
+        W_LOG_INFO("{}", scenePath.string());
+        std::ifstream sceneFile(scenePath);
+    
+        if (!sceneFile.is_open())
         {
-            if (std::filesystem::exists(inputPath))
-            {
-                std::filesystem::path projectDirectoryPath;
-
-                if (std::filesystem::is_regular_file(inputPath))
-                {
-                    projectDirectoryPath = inputPath.parent_path();
-                }
-                else if (std::filesystem::is_directory(inputPath))
-                {
-                    projectDirectoryPath = inputPath;
-                }
-                else
-                {
-                    errorList.push_back(BuildError(BuildError::Sevarity::Error, "Locating Project File Invalid Path Error: The provided path is neither a project file or directory!", true));
-                    return {};
-                }
-
-                std::vector<std::filesystem::path> wProjFiles;
-                for (const auto& entry : std::filesystem::directory_iterator(projectDirectoryPath))
-                {
-                    if (entry.is_regular_file() && entry.path().extension() == ".wproj")
-                    {
-                        wProjFiles.push_back(entry.path());
-                    }
-                }
-
-                if (wProjFiles.empty())
-                {
-                    errorList.push_back(BuildError(BuildError::Sevarity::Error, "Project File Not Found Error: Tungsten Project File (.wproj) not found!", true));
-                    return {};
-                }
-                else if (wProjFiles.size() > 1)
-                {
-                    std::string wProjFilesList;
-                    for (std::filesystem::path wProjFile : wProjFiles)
-                    {
-                        wProjFilesList += '\n' + wProjFile.filename().string();
-                    }
-                    errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Multiple Project File Error: There should be no more than one Tungsten Project File (.wproj) in the project directory. {} were found!{}", wProjFiles.size(), wProjFilesList), true));
-                    return {};
-                }
-                else
-                {
-                    return wProjFiles.front();
-                }
-            }
-            else
-            {
-                errorList.push_back(BuildError(BuildError::Sevarity::Error, "Locating Project File Invalid Path Error: project file or directory dose not exist!", true));
-                return {};
-            }
-        }
-        catch (const std::filesystem::filesystem_error& e)
-        {
-            errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Locating Project File Filesystem Error: {}", e.what()), true));
+    
             return {};
         }
-        catch (const std::exception& e)
+    
+        std::string line;
+        while (std::getline(sceneFile, line))
         {
-            errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Locating Project File General Error: {}", e.what()), true));
-            return {};
+            W_LOG_INFO_NO_LOCATION(line);
         }
+    
+        sceneFile.close();
+        return std::vector<uint8_t>();
     }
 
-    //static std::optional<std::vector<uint8_t>> SceneToBytes(const std::filesystem::path& scenePath, std::vector<BuildError>& errorList)
-    //{
-    //    W_LOG_INFO("{}", scenePath.string());
-    //    std::ifstream sceneFile(scenePath);
-    //
-    //    if (!sceneFile.is_open())
-    //    {
-    //
-    //        return {};
-    //    }
-    //
-    //    std::string line;
-    //    while (std::getline(sceneFile, line))
-    //    {
-    //        W_LOG_INFO_NO_LOCATION(line);
-    //    }
-    //
-    //    sceneFile.close();
-    //    return true;
-    //}
-
-    bool BuildProject(const std::filesystem::path& projectPath, std::filesystem::path outputDir, std::vector<BuildError>& errorList)
+    bool TungsrenForge::BuildProject(const std::filesystem::path& projectPath, std::filesystem::path outputDir)
     {
         W_LOG_DEBUG("Build called. Asset path: {} Output path: {}", projectPath.string(), outputDir.string());
 
-        std::optional<std::filesystem::path> projectFilePath = GetProjectPath(projectPath, errorList);
+        std::optional<std::filesystem::path> projectFilePath = GetProjectPath(projectPath);
 
         if (!projectFilePath.has_value())
         {
-            errorList.push_back(BuildError(BuildError::Sevarity::Error, "Project File Not Found Error: Tungsten Project File (.wproj) not found!", true));
+            m_errorList.push_back(BuildError(BuildError::Sevarity::Error, "Project File Not Found Error: Tungsten Project File (.wproj) not found!", true));
             return false;
         }
 
@@ -165,12 +86,12 @@ namespace wForge
 
         if (projectName != projectFilePath.value().stem().string())
         {
-            errorList.push_back(BuildError(BuildError::Sevarity::Warning, fmt::format("Naming mismatch Warning: Project file name \"{}\" should match project name \"{}\"", projectFilePath.value().stem().string(), projectName), true));
+            m_errorList.push_back(BuildError(BuildError::Sevarity::Warning, fmt::format("Naming mismatch Warning: Project file name \"{}\" should match project name \"{}\"", projectFilePath.value().stem().string(), projectName), true));
         }
 
         if (projectName != projectDirectoryPath.filename().string())
         {
-            errorList.push_back(BuildError(BuildError::Sevarity::Warning, fmt::format("Naming mismatch Warning: Project directory name \"{}\" should match project name \"{}\"", projectFilePath.value().parent_path().filename().string(), projectName), true));
+            m_errorList.push_back(BuildError(BuildError::Sevarity::Warning, fmt::format("Naming mismatch Warning: Project directory name \"{}\" should match project name \"{}\"", projectFilePath.value().parent_path().filename().string(), projectName), true));
         }
 
         std::vector<std::string> sceneList = projectFile["scenes"].as<std::vector<std::string>>();
@@ -210,6 +131,85 @@ namespace wForge
         else
         {
             W_LOG_ERROR("Failed to create the file.");
+        }
+    }
+
+    bool TungsrenForge::IsValedProjectPath(const std::filesystem::path& projectPath, std::string& errorMessage)
+    {
+        return true;
+    }
+
+    bool TungsrenForge::IsValedOutputPath(const std::filesystem::path& outputDir, std::string& errorMessage)
+    {
+        return true;
+    }
+
+    std::optional<std::filesystem::path> TungsrenForge::GetProjectPath(std::filesystem::path inputPath)
+    {
+        try
+        {
+            if (std::filesystem::exists(inputPath))
+            {
+                std::filesystem::path projectDirectoryPath;
+
+                if (std::filesystem::is_regular_file(inputPath))
+                {
+                    projectDirectoryPath = inputPath.parent_path();
+                }
+                else if (std::filesystem::is_directory(inputPath))
+                {
+                    projectDirectoryPath = inputPath;
+                }
+                else
+                {
+                    m_errorList.push_back(BuildError(BuildError::Sevarity::Error, "Locating Project File Invalid Path Error: The provided path is neither a project file or directory!", true));
+                    return {};
+                }
+
+                std::vector<std::filesystem::path> wProjFiles;
+                for (const auto& entry : std::filesystem::directory_iterator(projectDirectoryPath))
+                {
+                    if (entry.is_regular_file() && entry.path().extension() == ".wproj")
+                    {
+                        wProjFiles.push_back(entry.path());
+                    }
+                }
+
+                if (wProjFiles.empty())
+                {
+                    m_errorList.push_back(BuildError(BuildError::Sevarity::Error, "Project File Not Found Error: Tungsten Project File (.wproj) not found!", true));
+                    return {};
+                }
+                else if (wProjFiles.size() > 1)
+                {
+                    std::string wProjFilesList;
+                    for (std::filesystem::path wProjFile : wProjFiles)
+                    {
+                        wProjFilesList += '\n' + wProjFile.filename().string();
+                    }
+                    m_errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Multiple Project File Error: There should be no more than one Tungsten Project File (.wproj) in the project directory. {} were found!{}", wProjFiles.size(), wProjFilesList), true));
+                    return {};
+                }
+                else
+                {
+                    return wProjFiles.front();
+                }
+            }
+            else
+            {
+                m_errorList.push_back(BuildError(BuildError::Sevarity::Error, "Locating Project File Invalid Path Error: project file or directory dose not exist!", true));
+                return {};
+            }
+        }
+        catch (const std::filesystem::filesystem_error& e)
+        {
+            m_errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Locating Project File Filesystem Error: {}", e.what()), true));
+            return {};
+        }
+        catch (const std::exception& e)
+        {
+            m_errorList.push_back(BuildError(BuildError::Sevarity::Error, fmt::format("Locating Project File General Error: {}", e.what()), true));
+            return {};
         }
     }
 }

@@ -32,6 +32,11 @@ namespace wCore
 
     class Scene
     {
+    public:
+        uint32_t AddComponent(uint32_t type, std::string path);
+        uint32_t AddScene(Scene scene, std::string path);
+
+    private:
         std::vector<Component> m_components;
         std::vector<Transform> m_transforms;
         std::vector<MeshRenderer> m_meshRenderers;

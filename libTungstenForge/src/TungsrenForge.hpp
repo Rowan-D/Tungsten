@@ -34,9 +34,17 @@ namespace wForge
         std::string message;
     };
 
+    class TungsrenForge
+    {
+    public:
+        bool BuildProject(const std::filesystem::path& projectPath, const std::filesystem::path outputDir);
 
-    bool IsValedProjectPath(const std::filesystem::path& projectPath, std::string& errorMessage);
-    bool IsValedOutputPath(const std::filesystem::path& outputDir, std::string& errorMessage);
+        static bool IsValedProjectPath(const std::filesystem::path& projectPath, std::string& errorMessage);
+        static bool IsValedOutputPath(const std::filesystem::path& outputDir, std::string& errorMessage);
 
-    bool BuildProject(const std::filesystem::path& projectPath, const std::filesystem::path outputDir, std::vector<BuildError>& errorList);
+    private:
+        std::optional<std::filesystem::path> GetProjectPath(std::filesystem::path inputPath);
+
+        std::vector<wForge::BuildError> m_errorList;
+    };
 }
