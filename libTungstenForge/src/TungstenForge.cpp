@@ -1,6 +1,7 @@
 #include "wForgePCH.hpp"
 #include "TungsrenForge.hpp"
 #include "TungstenCore.hpp"
+#include "SceneData.hpp"
 
 namespace wForge
 {
@@ -10,9 +11,49 @@ namespace wForge
     //    std::vector<std::filesystem::path> sceneFiles;
     //};
 
+    std::string TungsrenForge::ReadFile(const std::filesystem::path& path)
+    {
+        // Open the file in binary mode and at the end position.
+        std::ifstream file(path, std::ios::binary | std::ios::ate);
+        if (!file.is_open())
+        {
+            errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Failed to open file: {}", path.string()));
+            return nullptr;
+        }
+
+        // Get the size of the file.
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        // Allocate buffer to hold the file data.
+        char* buffer = new char[size + 1];  // +1 for null terminator.
+        if (!file.read(buffer, size)) {
+            errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Failed to read file: {}", path.string()));
+            delete[] buffer;
+            return nullptr;
+        }
+
+        // Null terminate the buffer.
+        buffer[size] = '\0';
+
+        return buffer;
+    }
+
     TungsrenForge::TungsrenForge()
         : errorList()
     {
+    }
+
+    bool TungsrenForge::IsValedProjectPath(const std::filesystem::path& projectPath, std::string& errorMessage)
+    {
+        // TODO:
+        return true;
+    }
+
+    bool TungsrenForge::IsValedOutputPath(const std::filesystem::path& outputDir, std::string& errorMessage)
+    {
+        // TODO:
+        return true;
     }
 
     bool TungsrenForge::BuildProject(const std::filesystem::path& projectPath, std::filesystem::path outputDir)
@@ -50,17 +91,23 @@ namespace wForge
         {
             // Normalize the combined path (resolve any `.` or `..`)
             std::filesystem::path scenePath = (projectDirectoryPath / scenePathStr).lexically_normal();
-            //BuildScene(scenePath);
+            const char* sceneStr = ReadFile(scenePath);
+            SceneData sceneData;
+            sceneData.LoadSceneFromString(sceneStr, errorList);
+            delete[] sceneStr;
+            SceneDataToSceneBinary(sceneData);
         }
 
         outputDir /= projectName + "-Build";
         std::filesystem::path assetDataDir = outputDir / "data";
 
         std::error_code ec;
-        if (std::filesystem::create_directories(assetDataDir, ec)) {
+        if (std::filesystem::create_directories(assetDataDir, ec))
+        {
             //W_LOG_INFO("Directories created successfully!");
         }
-        else if (ec) {
+        else if (ec)
+        {
             W_LOG_ERROR("Failed to create directories: {}", ec.message());
         }
 
@@ -82,16 +129,6 @@ namespace wForge
         {
             W_LOG_ERROR("Failed to create the file.");
         }
-    }
-
-    bool TungsrenForge::IsValedProjectPath(const std::filesystem::path& projectPath, std::string& errorMessage)
-    {
-        return true;
-    }
-
-    bool TungsrenForge::IsValedOutputPath(const std::filesystem::path& outputDir, std::string& errorMessage)
-    {
-        return true;
     }
 
     std::optional<std::filesystem::path> TungsrenForge::GetProjectPath(std::filesystem::path inputPath)
@@ -163,24 +200,25 @@ namespace wForge
         }
     }
 
-    std::optional<std::vector<uint8_t>> TungsrenForge::SceneToBytes(const std::filesystem::path& scenePath)
+    std::optional<std::vector<uint8_t>> TungsrenForge::SceneDataToSceneBinary(const SceneData& sceneData)
     {
-        W_LOG_INFO("{}", scenePath.string());
-        std::ifstream sceneFile(scenePath);
-
-        if (!sceneFile.is_open())
-        {
-
-            return {};
-        }
-
-        std::string line;
-        while (std::getline(sceneFile, line))
-        {
-            W_LOG_INFO_NO_LOCATION(line);
-        }
-
-        sceneFile.close();
-        return std::vector<uint8_t>();
+        //W_LOG_INFO("{}", scenePath.string());
+        //std::ifstream sceneFile(scenePath);
+        //
+        //if (!sceneFile.is_open())
+        //{
+        //
+        //    return {};
+        //}
+        //
+        //std::string line;
+        //while (std::getline(sceneFile, line))
+        //{
+        //    W_LOG_INFO_NO_LOCATION(line);
+        //}
+        //
+        //sceneFile.close();
+        std::vector<uint8_t> sceneBinary;
+        return sceneBinary;
     }
 }

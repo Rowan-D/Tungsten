@@ -2,6 +2,7 @@
 
 // std
 #include <string>
+#include <cctype>
 #include <filesystem>
 #include <optional>
 
