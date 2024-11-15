@@ -27,14 +27,14 @@ project "yaml-cpp"
 	filter "system:windows"
 		systemversion "latest"
 
-	filter "system:linux"
+	filter "system:unix"
 		pic "On"
 		systemversion "latest"
 
 	filter "configurations:Debug"
 		runtime "Debug"
-		symbols "on"
+		symbols "On"
 
 	filter "configurations:Release"
 		runtime "Release"
-		optimize "on"
+		optimize "On"

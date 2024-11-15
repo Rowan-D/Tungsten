@@ -1,0 +1,3 @@
+projectName: "SandBox"
+scenes:
+- "Assets/Scenes/main.wscene"

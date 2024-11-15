@@ -6,8 +6,8 @@
 
 namespace wCore
 {
-    Logger::Logger()
-        : m_console(nullptr)
+    Loggerasfd::Loggerasfd()
+        //: m_console(nullptr)
     {
         auto stdout_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         stdout_sink->set_level(spdlog::level::trace);  // Set log level for stdout sink
@@ -33,9 +33,9 @@ namespace wCore
         m_console->set_level(spdlog::level::trace);
     }
 
-    Logger& Logger::Get()
+    Loggerasfd& Loggerasfd::Get()
     {
-        static Logger instance;
+        static Loggerasfd instance;
         return instance;
     }
 }

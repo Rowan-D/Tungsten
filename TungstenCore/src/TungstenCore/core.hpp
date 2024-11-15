@@ -19,16 +19,15 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
+#include "macros.hpp"
 #include "ansi.hpp"
 #include "logging.hpp"
 
 #ifdef W_DEBUG
-#define W_ASSERT(check, ...) \
-    do { \
-        if (!(check)) { \
+    #define W_ASSERT(check, ...) \
+        ENFORCE_SEMICOLON(if (!(check)) { \
             W_LOG_CRITICAL_ERROR(__VA_ARGS__); \
-        } \
-    } while (0)
+        });
 #else
-#define W_ASSERT(check, ...)
+    #define W_ASSERT(check, ...)
 #endif

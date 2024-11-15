@@ -1,14 +1,15 @@
 #pragma once
 #include "core.hpp"
+#include <iostream>
 
 namespace wCore
 {
-    class Logger
+    class Loggerasfd
     {
     public:
-        Logger();
+        Loggerasfd();
 
-        static Logger& Get();
+        static Loggerasfd& Get();
 
         inline std::shared_ptr<spdlog::logger>& GetLogger() { return m_console; }
 

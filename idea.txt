@@ -1,0 +1,19 @@
+white space count
+typename
+white space skip
+if string:
+    string
+    white space skip
+colon
+white space skip
+string
+
+repeat
+
+std::string_view sceneStr;
+size_t i = 0;
+while (i < sceneStr.size())
+{
+    
+    GetTypename(i, sceneStr);
+}

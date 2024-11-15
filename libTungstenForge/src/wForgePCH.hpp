@@ -1,6 +1,7 @@
 #pragma once
 
 // std
+#include <cstdlib>
 #include <string>
 #include <cctype>
 #include <filesystem>

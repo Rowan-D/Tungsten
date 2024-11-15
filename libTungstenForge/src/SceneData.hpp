@@ -34,7 +34,7 @@ namespace wForge
     public:
         SceneData();
 
-        bool LoadSceneFromString(const std::string& sceneStr, ErrorList& errorList);
+        bool LoadSceneFromString(const std::string_view& sceneStr, ErrorList& errorList);
 
         static bool IsValidTypeName(const std::string_view& typeName);
 

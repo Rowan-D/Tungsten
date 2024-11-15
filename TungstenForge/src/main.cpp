@@ -2,12 +2,12 @@
 #include <iostream>
 #include <string>
 
-#include "TungsrenForge.hpp"
+#include "TungstenForge.hpp"
 
 int main(int argc, char* argv[])
 {
-    wForge::TungsrenForge projectBuilder;
-    projectBuilder.BuildProject("C:/Users/Rowan/Desktop/SandBox", "C:/Users/Rowan/Desktop");
+    wForge::TungstenForge projectBuilder;
+    projectBuilder.BuildProject(wForge::ExpandTilde("~/dev/Tungsten/Sandbox"), wForge::ExpandTilde("~/dev/Tungsten/"));
     
     std::cout << "----------------------------" << std::endl;
     
@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     
         for (const wForge::ErrorList::Error& error : errorList)
         {
-            std::cout << std::format("{}: {}", error.SeverityToString(), error.message) << std::endl;
+            std::cout << error.SeverityToString() << ": " << error.message << std::endl;
         }
     }
 }

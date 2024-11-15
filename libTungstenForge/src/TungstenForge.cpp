@@ -1,140 +1,30 @@
 #include "wForgePCH.hpp"
-#include "TungsrenForge.hpp"
+#include "TungstenForge.hpp"
 #include "TungstenCore.hpp"
 #include "SceneData.hpp"
 
 namespace wForge
 {
+    //std::filesystem::path ExpandTilde(const std::string_view& path)
+    //{
+    //    return {};
+    //}
     //struct ProjectSettings
     //{
     //    std::string name;
     //    std::vector<std::filesystem::path> sceneFiles;
     //};
 
-    std::string TungsrenForge::ReadFile(const std::filesystem::path& path)
-    {
-        // Open the file in binary mode and at the end position.
-        std::ifstream file(path, std::ios::binary | std::ios::ate);
-        if (!file.is_open())
-        {
-            errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Failed to open file: {}", path.string()));
-            return nullptr;
-        }
-
-        // Get the size of the file.
-        std::streamsize size = file.tellg();
-        file.seekg(0, std::ios::beg);
-
-        // Allocate buffer to hold the file data.
-        char* buffer = new char[size + 1];  // +1 for null terminator.
-        if (!file.read(buffer, size)) {
-            errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Failed to read file: {}", path.string()));
-            delete[] buffer;
-            return nullptr;
-        }
-
-        // Null terminate the buffer.
-        buffer[size] = '\0';
-
-        return buffer;
-    }
-
-    TungsrenForge::TungsrenForge()
+    TungstenForge::TungstenForge()
         : errorList()
     {
     }
 
-    bool TungsrenForge::IsValedProjectPath(const std::filesystem::path& projectPath, std::string& errorMessage)
-    {
-        // TODO:
-        return true;
-    }
-
-    bool TungsrenForge::IsValedOutputPath(const std::filesystem::path& outputDir, std::string& errorMessage)
-    {
-        // TODO:
-        return true;
-    }
-
-    bool TungsrenForge::BuildProject(const std::filesystem::path& projectPath, std::filesystem::path outputDir)
-    {
-        W_LOG_DEBUG("Build called. Asset path: {} Output path: {}", projectPath.string(), outputDir.string());
-
-        std::optional<std::filesystem::path> projectFilePath = GetProjectPath(projectPath);
-
-        if (!projectFilePath.has_value())
-        {
-            errorList.Log(Severity::Error, ERROR_CODE_TODO, "Project File Not Found Error: Tungsten Project File (.wproj) not found!");
-            return false;
-        }
-
-        // TODO Check if .parent_path() can fail
-        std::filesystem::path projectDirectoryPath = projectFilePath.value().parent_path();
-
-        YAML::Node projectFile = YAML::LoadFile(projectFilePath.value().string());
-
-        std::string projectName = projectFile["projectName"].as<std::string>();
-
-        if (projectName != projectFilePath.value().stem().string())
-        {
-            errorList.Log(Severity::Warning, ERROR_CODE_TODO, fmt::format("Naming mismatch Warning: Project file name \"{}\" should match project name \"{}\"", projectFilePath.value().stem().string(), projectName));
-        }
-
-        if (projectName != projectDirectoryPath.filename().string())
-        {
-            errorList.Log(Severity::Warning, ERROR_CODE_TODO, fmt::format("Naming mismatch Warning: Project directory name \"{}\" should match project name \"{}\"", projectFilePath.value().parent_path().filename().string(), projectName));
-        }
-
-        std::vector<std::string> sceneList = projectFile["scenes"].as<std::vector<std::string>>();
-        W_LOG_INFO("scene Count: {}", sceneList.size());
-        for (const std::string& scenePathStr : sceneList)
-        {
-            // Normalize the combined path (resolve any `.` or `..`)
-            std::filesystem::path scenePath = (projectDirectoryPath / scenePathStr).lexically_normal();
-            const char* sceneStr = ReadFile(scenePath);
-            SceneData sceneData;
-            sceneData.LoadSceneFromString(sceneStr, errorList);
-            delete[] sceneStr;
-            SceneDataToSceneBinary(sceneData);
-        }
-
-        outputDir /= projectName + "-Build";
-        std::filesystem::path assetDataDir = outputDir / "data";
-
-        std::error_code ec;
-        if (std::filesystem::create_directories(assetDataDir, ec))
-        {
-            //W_LOG_INFO("Directories created successfully!");
-        }
-        else if (ec)
-        {
-            W_LOG_ERROR("Failed to create directories: {}", ec.message());
-        }
-
-        std::ofstream outFile(assetDataDir / "data0.wdat");
-
-        // Check if the file is open (which also means it was created successfully)
-        if (outFile.is_open())
-        {
-            // Write to the file
-            outFile << "Hello, world!\n";
-            outFile << "This is a file creation example in C++.\n";
-
-            // Close the file
-            outFile.close();
-
-            //W_LOG_INFO("File created and written to successfully!");
-        }
-        else
-        {
-            W_LOG_ERROR("Failed to create the file.");
-        }
-    }
-
-    std::optional<std::filesystem::path> TungsrenForge::GetProjectPath(std::filesystem::path inputPath)
+    std::optional<std::filesystem::path> TungstenForge::GetProjectPath(const std::filesystem::path& inputPath)
     {
         try
         {
+            
             if (std::filesystem::exists(inputPath))
             {
                 std::filesystem::path projectDirectoryPath;
@@ -200,7 +90,112 @@ namespace wForge
         }
     }
 
-    std::optional<std::vector<uint8_t>> TungsrenForge::SceneDataToSceneBinary(const SceneData& sceneData)
+    bool TungstenForge::BuildProject(const std::filesystem::path& projectPath, std::filesystem::path outputDir)
+    {
+
+        W_LOG_DEBUG("Build called. Asset path: {} Output path: {}", projectPath.string(), outputDir.string());
+
+        std::optional<std::filesystem::path> projectFilePath = GetProjectPath(projectPath);
+
+        if (!projectFilePath.has_value())
+        {
+            errorList.Log(Severity::Error, ERROR_CODE_TODO, "Project File Not Found Error: Tungsten Project File (.wproj) not found!");
+            return false;
+        }
+
+        // TODO Check if .parent_path() can fail
+        std::filesystem::path projectDirectoryPath = projectFilePath.value().parent_path();
+
+        YAML::Node projectFile = YAML::LoadFile(projectFilePath.value().string());
+
+        std::string projectName = projectFile["projectName"].as<std::string>();
+
+        if (projectName != projectFilePath.value().stem().string())
+        {
+            errorList.Log(Severity::Warning, ERROR_CODE_TODO, fmt::format("Naming mismatch Warning: Project file name \"{}\" should match project name \"{}\"", projectFilePath.value().stem().string(), projectName));
+        }
+
+        if (projectName != projectDirectoryPath.filename().string())
+        {
+            errorList.Log(Severity::Warning, ERROR_CODE_TODO, fmt::format("Naming mismatch Warning: Project directory name \"{}\" should match project name \"{}\"", projectFilePath.value().parent_path().filename().string(), projectName));
+        }
+
+        std::vector<std::string> sceneList = projectFile["scenes"].as<std::vector<std::string>>();
+        W_LOG_INFO("scene Count: {}", sceneList.size());
+        for (const std::string& scenePathStr : sceneList)
+        {
+            // Normalize the combined path (resolve any `.` or `..`)
+            std::filesystem::path scenePath = (projectDirectoryPath / scenePathStr).lexically_normal();
+            std::string sceneStr = ReadFile(scenePath);
+            SceneData sceneData;
+            sceneData.LoadSceneFromString(sceneStr, errorList);
+            SceneDataToSceneBinary(sceneData);
+        }
+
+        outputDir /= projectName + "Build";
+        std::filesystem::path assetDataDir = outputDir / "data";
+
+        std::error_code ec;
+        if (std::filesystem::create_directories(assetDataDir, ec))
+        {
+            //W_LOG_INFO("Directories created successfully!");
+        }
+        else if (ec)
+        {
+            W_LOG_ERROR("Failed to create directories: {}", ec.message());
+        }
+
+        std::ofstream outFile(assetDataDir / "data0.wdat");
+
+        // Check if the file is open (which also means it was created successfully)
+        if (outFile.is_open())
+        {
+            // Write to the file
+            outFile << "Hello, world!\n";
+            outFile << "This is a file creation example in C++.\n";
+
+            // Close the file
+            outFile.close();
+
+            //W_LOG_INFO("File created and written to successfully!");
+        }
+        else
+        {
+            W_LOG_ERROR("Failed to create the file.");
+        }
+
+        return false;
+    }
+
+    std::string TungstenForge::ReadFile(const std::filesystem::path& path)
+    {
+        // Open the file in binary mode and at the end position.
+        std::ifstream file(path, std::ios::binary | std::ios::ate);
+        if (!file.is_open())
+        {
+            errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Failed to open file: {}", path.string()));
+            return nullptr;
+        }
+
+        // Get the size of the file.
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        // Allocate buffer to hold the file data.
+        char* buffer = new char[size + 1];  // +1 for null terminator.
+        if (!file.read(buffer, size)) {
+            errorList.Log(Severity::Error, ERROR_CODE_TODO, fmt::format("Failed to read file: {}", path.string()));
+            delete[] buffer;
+            return nullptr;
+        }
+
+        // Null terminate the buffer.
+        buffer[size] = '\0';
+
+        return buffer;
+    }
+
+    std::optional<std::vector<uint8_t>> TungstenForge::SceneDataToSceneBinary(const SceneData& sceneData)
     {
         //W_LOG_INFO("{}", scenePath.string());
         //std::ifstream sceneFile(scenePath);
