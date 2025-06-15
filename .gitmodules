@@ -1,0 +1,3 @@
+[submodule "TungstenUtils/vendor/fmt"]
+	path = TungstenUtils/vendor/fmt
+	url = https://github.com/fmtlib/fmt.git
