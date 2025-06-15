@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(TungstenCore
     include/TungstenCore.hpp
+    src/TungstenCore.cpp
 )
 
 target_include_directories(TungstenCore PUBLIC
