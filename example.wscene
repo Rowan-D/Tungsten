@@ -1,0 +1,18 @@
+Transform MainCamera { position = [13, 3.14, 5], rotation = [0.0, 0.0, 0.0, 1.0], scale = [1.0, 1.0, 1.0] }
+  Camera { fovy = 85.0 }
+
+Transform box
+  RigidBody # default values
+    BoxCollidor
+  MeshRenderer { mesh = "Meshes/box.obj" }
+
+Transform "example object"
+  CostomeComponent nameOfComponent
+
+# '$' includes 
+$Player player0
+  Player { speed = 2.5 }
+  Transform newComponent
+  ~Transform existingComponent # '~' removes
+
+$"Examples\\example include" exampleName
