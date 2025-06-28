@@ -1,13 +1,38 @@
-#include "TungstenForge.hpp"
+#include "TungstenForge/TungstenForge.hpp"
 
 int main(int argc, char** argv)
 {
-    W_LOG_INFO("Argument Count: {}", argc);
-    for (uint32_t argumentIndex; argumentIndex < argc; ++argumentIndex) {
-        W_LOG_INFO("  Argument Value: {}", argv);
+    wUtils::TungstenLogger logger;
+    if (argc < 2)
+    {
+        logger.LogError("Expected a path to a Tungsten Project!");
+        return 1;
     }
-    wForge::TungstenForge tungstenForge;
-    tungstenForge.Build();
+    if (argc > 3)
+    {
+        logger.LogWarning("Expected up to 2 Arguments.");
+        return 1;
+    }
 
-    return 0;
+    const std::filesystem::path inputPath = argv[1];
+    std::filesystem::path outputPath;
+    if (argc > 2)
+    {
+        outputPath = argv[2];
+    }
+    else
+    {
+        outputPath = std::filesystem::current_path();
+    }
+
+    W_DEBUG_LOG_INFO("Input Path: {}", inputPath.string());
+    W_DEBUG_LOG_INFO("Output Path: {}", outputPath.string());
+
+    wForge::TungstenForge tungstenForge;
+    if (tungstenForge.BuildProject(inputPath, outputPath))
+    {
+        return 0;
+    }
+
+    return 1;
 }

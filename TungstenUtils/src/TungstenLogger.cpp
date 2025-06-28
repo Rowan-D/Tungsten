@@ -1,10 +1,11 @@
-#include "TungstenLogger.hpp"
+#include "TungstenUtils/wUtilsPCH.hpp"
+#include "TungstenUtils/TungstenLogger.hpp"
 
 namespace wUtils
 {
-    Logger& Logger::Get()
+    TungstenLogger& TungstenLogger::GetDebugLogger()
     {
-        static Logger instance;
+        static TungstenLogger instance;
         return instance;
     }
 }

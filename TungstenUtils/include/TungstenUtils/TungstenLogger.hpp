@@ -1,17 +1,22 @@
 #ifndef TUNGSTEN_UTILS_TUNGSTEN_LOGGER_HPP
 #define TUNGSTEN_UTILS_TUNGSTEN_LOGGER_HPP
 
-#include "fmt/format.h"
 #include <iostream>
+#include "fmt/format.h"
 
-#define W_LOG_INFO(...) wUtils::Logger::Get().LogInfo(__VA_ARGS__);
-#define W_LOG_WARNING(...) wUtils::Logger::Get().LogWarning(__VA_ARGS__);
-#define W_LOG_ERROR(...) wUtils::Logger::Get().LogError(__VA_ARGS__);
-#define W_LOG_CRITICAL_ERROR(...) wUtils::Logger::Get().LogCritical(__VA_ARGS__);
+#define W_DEBUG_LOG_INFO(...) wUtils::TungstenLogger::GetDebugLogger().LogInfo(__VA_ARGS__)
+#define W_DEBUG_LOG_WARNING(...) wUtils::TungstenLogger::GetDebugLogger().LogWarning(__VA_ARGS__)
+#define W_DEBUG_LOG_ERROR(...) wUtils::TungstenLogger::GetDebugLogger().LogError(__VA_ARGS__)
+#define W_DEBUG_LOG_CRITICAL_ERROR(...) wUtils::TungstenLogger::GetDebugLogger().LogCritical(__VA_ARGS__)
+
+#define W_LOG_INFO(logger, ...) logger.LogInfo(__VA_ARGS__)
+#define W_LOG_WARNING(logger, ...) logger.LogWarning(__VA_ARGS__)
+#define W_LOG_ERROR(logger, ...) logger.LogError(__VA_ARGS__)
+#define W_LOG_CRITICAL_ERROR(logger, ...) logger.LogCritical(__VA_ARGS__)
 
 namespace wUtils
 {
-    class Logger
+    class TungstenLogger
     {
     public:
         template<typename... Args>
@@ -38,7 +43,7 @@ namespace wUtils
             std::cerr << "[Error] " << fmt::format(fmt, args...) << std::endl;
         }
 
-        static Logger& Get();
+        static TungstenLogger& GetDebugLogger();
     private:
     };
 }

@@ -1,4 +1,4 @@
-#include "TungstenCore.hpp"
+#include "TungstenCore/TungstenCore.hpp"
 
 class Transform
 {
@@ -7,7 +7,7 @@ class Transform
 
 int main()
 {
-    W_LOG_INFO("Hello, World!");
+    W_DEBUG_LOG_INFO("Hello, World!");
 
     wCore::ComponentManager componentManager;
     wCore::ComponentList<Transform> transforms(componentManager);
