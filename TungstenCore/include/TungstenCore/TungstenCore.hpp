@@ -12,7 +12,7 @@ namespace wCore
     {
     public:
         Application();
-        void Run();
+        bool Run();
 
         uint32_t CreateScene();
         void DestroyScene(uint32_t sceneIndex);

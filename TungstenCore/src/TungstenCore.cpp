@@ -6,7 +6,7 @@ namespace wCore
     {
     }
 
-    void Application::Run()
+    bool Application::Run()
     {
     }
 

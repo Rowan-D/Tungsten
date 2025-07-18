@@ -11,16 +11,19 @@ add_library(TungstenUtils
     include/TungstenUtils/TungstenUtils.hpp
     include/TungstenUtils/TungstenLogger.hpp
     include/TungstenUtils/SlotList.hpp
-    include/TungstenUtils/wUtilsPCH.hpp
-    src/TungstenLogger.cpp
+    include/macros/noOp.hpp
+    include/macros/debugBreak.hpp
+    include/macros/assert.hpp
+    src/wUtilsPCH.hpp
     src/wUtilsPCH.cpp
+    src/TungstenLogger.cpp
 )
 
 target_include_directories(TungstenUtils PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_precompile_headers(TungstenUtils PRIVATE TungstenUtils/wUtilsPCH.hpp)
+#target_precompile_headers(TungstenUtils PRIVATE TungstenUtils/wUtilsPCH.hpp)
 
 target_link_libraries(TungstenUtils PUBLIC fmt::fmt)
 
