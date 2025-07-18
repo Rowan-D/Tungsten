@@ -11,9 +11,10 @@ add_library(TungstenUtils
     include/TungstenUtils/TungstenUtils.hpp
     include/TungstenUtils/TungstenLogger.hpp
     include/TungstenUtils/SlotList.hpp
-    include/macros/noOp.hpp
-    include/macros/debugBreak.hpp
-    include/macros/assert.hpp
+    include/TungstenUtils/macros/ansi.hpp
+    include/TungstenUtils/macros/noOp.hpp
+    include/TungstenUtils/macros/debugBreak.hpp
+    include/TungstenUtils/macros/assert.hpp
     src/wUtilsPCH.hpp
     src/wUtilsPCH.cpp
     src/TungstenLogger.cpp

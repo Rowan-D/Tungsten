@@ -6,7 +6,6 @@ class Transform
 };
 
 int Awake()
-int main()
 {
     W_DEBUG_LOG_INFO("Hello, World!");
 
@@ -14,11 +13,7 @@ int main()
     wCore::ComponentManager& componentManager = app.GetComponentManager();
     wCore::ComponentList<Transform> transformComponentList(componentManager);
 
-    app.CreateComponent<Transform>();
+    //app.CreateComponent<Transform>();
 
-    if (app.Run())
-    {
-        return 0;
-    }
-    return 1;
+    return app.Run();
 }

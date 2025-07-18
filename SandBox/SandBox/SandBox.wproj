@@ -1,3 +1,4 @@
 projectName: "SandBox"
+include: "SandBox/SandBox.hpp"
 scenes:
 - "Scenes/main.wscene"

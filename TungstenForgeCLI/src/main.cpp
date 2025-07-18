@@ -29,7 +29,7 @@ int main(int argc, char** argv)
     W_DEBUG_LOG_INFO("Output Path: {}", outputPath.string());
 
     wForge::TungstenForge tungstenForge;
-    if (tungstenForge.BuildProject(inputPath, outputPath))
+    if (tungstenForge.BuildProject(inputPath, outputPath, outputPath))
     {
         return 0;
     }

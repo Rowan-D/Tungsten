@@ -8,6 +8,7 @@ namespace wCore
 
     bool Application::Run()
     {
+        return true;
     }
 
     uint32_t Application::CreateScene()

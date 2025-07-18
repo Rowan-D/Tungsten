@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "fmt/format.h"
+#include "macros/ansi.hpp"
 
 #define W_DEBUG_LOG_INFO(...) wUtils::TungstenLogger::GetDebugLogger().LogInfo(__VA_ARGS__)
 #define W_DEBUG_LOG_WARNING(...) wUtils::TungstenLogger::GetDebugLogger().LogWarning(__VA_ARGS__)
@@ -22,25 +23,25 @@ namespace wUtils
         template<typename... Args>
         void LogInfo(fmt::format_string<Args...> fmt, Args&&... args)
         {
-            std::cout << "[Info] " << fmt::format(fmt, std::forward<Args>(args)...) << std::endl;
+            std::cout << ANSI_BLUE << "[Info] " << ANSI_RESET << fmt::format(fmt, std::forward<Args>(args)...) << std::endl;
         }
 
         template<typename... Args>
         void LogWarning(fmt::format_string<Args...> fmt, Args&&... args)
         {
-            std::cout << "[Warning] " << fmt::format(fmt, args...) << std::endl;
+            std::cout << ANSI_YELLOW << "[Warning] " << ANSI_RESET << fmt::format(fmt, args...) << std::endl;
         }
 
         template<typename... Args>
         void LogError(fmt::format_string<Args...> fmt, Args&&... args)
         {
-            std::cerr << "[Error] " << fmt::format(fmt, args...) << std::endl;
+            std::cerr << ANSI_RED << "[Error] " << ANSI_RESET << fmt::format(fmt, args...) << std::endl;
         }
 
         template<typename... Args>
         void LogCritical(fmt::format_string<Args...> fmt, Args&&... args)
         {
-            std::cerr << "[Error] " << fmt::format(fmt, args...) << std::endl;
+            std::cerr << ANSI_BG_RED << ANSI_YELLOW << "[Error] " << ANSI_RESET << fmt::format(fmt, args...) << std::endl;
         }
 
         static TungstenLogger& GetDebugLogger();
