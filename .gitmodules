@@ -1,3 +1,6 @@
-[submodule "TungstenUtils/vendor/fmt"]
-	path = TungstenUtils/vendor/fmt
+[submodule "TungstenUtils/external/fmt"]
+	path = TungstenUtils/external/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "TungstenForge/external/rapidyaml"]
+	path = TungstenForge/external/rapidyaml
+	url = https://github.com/biojppm/rapidyaml.git
