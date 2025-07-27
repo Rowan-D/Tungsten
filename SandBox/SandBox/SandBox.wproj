@@ -1,4 +1,6 @@
 projectName: "SandBox"
 include: "SandBox/SandBox.hpp"
+initCode: |
+  SandBox::Awake(x)
 scenes:
 - "Scenes/main.wscene"
