@@ -1,0 +1,10 @@
+#ifndef TUNGSTEN_RUNTIME_GENERATED_PROJECT_DEFINES_HPP
+#define TUNGSTEN_RUNTIME_GENERATED_PROJECT_DEFINES_HPP
+
+#include "TungstenCore/TungstenCore.hpp"
+
+#define TUNGSTEN_PROJECT_INCLUDE_PATH "SandBox/SandBox.hpp"
+#define TUNGSTEN_PROJECT_INIT(x) SandBox::Awake(x)
+
+
+#endif
