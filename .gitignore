@@ -1,4 +1,6 @@
-build/
+[Bb]uild/
+**/[Bb]uild/
+**/Intermediate/
 out/
 .vs/
 .vscode/
