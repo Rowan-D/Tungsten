@@ -5,7 +5,7 @@
 
 namespace SandBox
 {
-    void Awake(wCore::ComponentManager& componentManager);
+    void Awake(wCore::ComponentSetup& somponentSetup);
 }
 
 #endif

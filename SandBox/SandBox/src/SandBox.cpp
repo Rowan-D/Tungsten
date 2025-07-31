@@ -6,10 +6,16 @@ namespace SandBox {
         float matrix[4 * 4];
     };
 
-    void Awake(wCore::ComponentManager& componentManager)
+    class GameManager
+    {
+        int i;
+    };
+
+    void Awake(wCore::ComponentSetup& componentManager)
     {
         W_DEBUG_LOG_INFO("Hello, World! From SandBox Awake!");
 
-        componentManager.Add<Transform>();
+        componentManager.Add<Transform>("Transform");
+        componentManager.Add<GameManager>("GameManager");
     }
 }
