@@ -1,6 +1,8 @@
 [Bb]uild/
 **/[Bb]uild/
 **/Intermediate/
+**/bin/
+**/bin-int/
 out/
 .vs/
 .vscode/
