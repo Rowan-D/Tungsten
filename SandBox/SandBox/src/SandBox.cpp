@@ -3,11 +3,25 @@
 namespace SandBox {
     class Transform
     {
+    public:
+        Transform()
+        {
+            W_DEBUG_LOG_INFO("{} Transform Constructor Called!!!", ANSI_RED);
+        }
+
+    private:
         float matrix[4 * 4];
     };
 
     class GameManager
     {
+    public:
+        GameManager()
+        {
+            W_DEBUG_LOG_INFO("{} GameManager Constructor Called!!!!!!", ANSI_BLUE);
+        }
+
+    private:
         int i;
     };
 
