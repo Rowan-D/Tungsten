@@ -1,21 +1,32 @@
 #include "SandBox/SandBox.hpp"
 
 namespace SandBox {
-    class Transform
-    {
-    public:
-        Transform()
-        {
-            W_DEBUG_LOG_INFO("{} Transform Constructor Called!!!", ANSI_RED);
+    struct Transform {
+        Transform() { W_DEBUG_LOG_INFO("{} Transform ctor", ANSI_RED); }
+        Transform(const Transform& rhs) {
+            W_DEBUG_LOG_INFO("{} Transform copy-ctor", ANSI_RED);
+            std::memcpy(matrix, rhs.matrix, sizeof matrix);
+        }
+        Transform(Transform&& rhs) noexcept {
+            // make move noexcept to satisfy your ECS noexcept policy
+            try { W_DEBUG_LOG_INFO("{} Transform move-ctor", ANSI_RED); } catch (...) {}
+            std::memcpy(matrix, rhs.matrix, sizeof matrix);
+        }
+        Transform& operator=(const Transform& rhs) {
+            W_DEBUG_LOG_INFO("{} Transform copy-assign", ANSI_RED);
+            std::memcpy(matrix, rhs.matrix, sizeof matrix);
+            return *this;
+        }
+        Transform& operator=(Transform&& rhs) noexcept {
+            try { W_DEBUG_LOG_INFO("{} Transform move-assign", ANSI_RED); } catch (...) {}
+            std::memcpy(matrix, rhs.matrix, sizeof matrix);
+            return *this;
+        }
+        ~Transform() {
+            try { W_DEBUG_LOG_INFO("{} Transform dtor", ANSI_RED); } catch (...) {}
         }
 
-        ~Transform()
-        {
-            W_DEBUG_LOG_INFO("{} Transform Destructor Called!!!", ANSI_RED);
-        }
-
-    private:
-        float matrix[4 * 4];
+        float matrix[16];
     };
 
     class GameManager
