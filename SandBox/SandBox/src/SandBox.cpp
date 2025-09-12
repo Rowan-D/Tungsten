@@ -46,11 +46,25 @@ namespace SandBox {
         int i;
     };
 
-    void Awake(wCore::ComponentSetup& componentManager)
+    struct TransformGorothPolicy
+    {
+        static constexpr wIndex InitialCapacity = 8;
+
+        static inline constexpr wIndex Next(wIndex requested, wIndex current) noexcept
+        {
+            if (!current)
+            {
+                return std::max(InitialCapacity, requested);
+            }
+            return std::max(current * 2, requested);
+        }
+    };
+
+    void Awake(wCore::ComponentSetup& ComponentSetup)
     {
         W_DEBUG_LOG_INFO("Hello, World! From SandBox Awake!");
 
-        componentManager.Add<Transform>("Transform");
-        componentManager.Add<GameManager>("GameManager");
+        ComponentSetup.Add<Transform, 2048, TransformGorothPolicy>("Transform");
+        ComponentSetup.Add<GameManager>("GameManager");
     }
 }
