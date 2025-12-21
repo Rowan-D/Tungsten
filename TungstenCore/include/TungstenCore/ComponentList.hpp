@@ -1,6 +1,0 @@
-#ifndef TUNGSTEN_CORE_COMPONENT_LIST_HPP
-#define TUNGSTEN_CORE_COMPONENT_LIST_HPP
-
-#define W_COMPONENT(type, name, include)
-
-#endif
