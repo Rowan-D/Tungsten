@@ -1,0 +1,6 @@
+#ifndef TUNGSTEN_BUILD_CONFIG_HPP
+#define TUNGSTEN_BUILD_CONFIG_HPP
+
+#define TUNGSTENBUILD_RESOURCE_PATH "tungstenbuild_data"
+
+#endif

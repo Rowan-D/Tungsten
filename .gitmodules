@@ -1,3 +1,9 @@
-[submodule "SandBox/Engine/TungstenCore"]
-	path = SandBox/Engine/TungstenCore
-	url = https://github.com/Rowan-D/TungstenCore.git
+[submodule "TungstenBuild/TungstenBuildStandalone/external/CLI11"]
+	path = TungstenBuild/TungstenBuildStandalone/external/CLI11
+	url = https://github.com/CLIUtils/CLI11.git
+[submodule "TungstenBuild/TungstenBuild/external/rapidlyaml"]
+	path = TungstenBuild/TungstenBuild/external/rapidlyaml
+	url = https://github.com/biojppm/rapidyaml.git
+[submodule "external/TungstenUtils"]
+	path = external/TungstenUtils
+	url = https://github.com/Rowan-D/TungstenUtils.git
