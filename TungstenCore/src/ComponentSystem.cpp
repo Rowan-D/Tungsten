@@ -7,4 +7,8 @@ namespace wCore
         : m_app(app)
     {
     }
+
+    ComponentSystem::~ComponentSystem() noexcept
+    {
+    }
 }
