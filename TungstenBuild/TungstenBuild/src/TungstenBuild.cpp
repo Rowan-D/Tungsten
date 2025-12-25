@@ -172,12 +172,14 @@ namespace wBuild
                 return false;
             }
             csv::CSVReader reader(componentListFile);
+
+            std::string componentDeclorations;
+            std::string componentIncludes;
+
             for (csv::CSVRow& row : reader) {
-                std::cout << "Type: " << row["Type"].get<std::string>()
-                          << ", Include: " << row["Include"].get<std::string>() << '\n';
+                std::cout << "Type: " << row["Type"].get<std::string>() << ", Include: " << row["Include"].get<std::string>() << '\n';
                  
             }
-
 
             const std::string projectName = projectFilePath.stem().string();
             W_LOG_INFO(errorList, "projectName: {}", projectName);
@@ -201,9 +203,6 @@ namespace wBuild
                 { "@TUNGSTEN_RUNTIME_EXECUTABLE_NAME@", executableName },
                 { "@TUNGSTEN_RUNTIME_SOURCE_DIR@", tungstenRuntimeSourceDirStr }
             }};
-
-            std::string componentDeclorations;
-            std::string componentIncludes;
 
             const std::array<std::pair<std::string_view, std::string_view>, 1> componentDeclorationsReplacements = {{
                 { "@COMPONENT_DECLORATIONS@", componentDeclorations }
