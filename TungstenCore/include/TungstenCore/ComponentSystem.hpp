@@ -9,11 +9,43 @@ namespace wCore
     class Application;
 
     using SceneIndex = wIndex;
-    using ComponentIndex = wIndex;
+    inline constexpr SceneIndex InvalidSceneIndex = 0;
+    inline constexpr SceneIndex SceneIndexStart = 1;
 
+    using ComponentIndex = wIndex;
+    inline constexpr ComponentIndex InvalidComponentIndex = 0;
+    inline constexpr ComponentIndex ComponentIndexStart = 1;
+
+    class ComponentGeneration
+    {
+    public:
+        constexpr ComponentGeneration() noexcept
+            : m_generation(0) {}
+
+        friend constexpr bool operator==(const ComponentGeneration&, const ComponentGeneration&) = default;
+
+    private:
+        uint32_t m_generation;
+        friend class ComponentSystem;
+    };
+    
+    class SceneGeneration
+    {
+    public:
+        constexpr SceneGeneration() noexcept
+            : m_generation(0) {}
+
+        friend constexpr bool operator==(const SceneGeneration&, const SceneGeneration&) = default;
+
+    private:
+        uint32_t m_generation;
+        friend class ComponentSystem;
+    };
+    
     class SceneHandle
     {
         SceneIndex sceneIndex;
+        SceneGeneration generation;
     };
 
     template<typename T>
@@ -21,6 +53,7 @@ namespace wCore
     {
         SceneHandle sceneHandle;
         ComponentIndex componentIndex;
+        ComponentGeneration generation;
     };
 
     class ComponentSystem
@@ -119,7 +152,11 @@ namespace wCore
             return InitialCapacity;
         }
 
+        void ReallocateScenes(wIndex newCapacity);
+
         Application& m_app;
+
+        wIndex m_sceneCapacity;
     };
 }
 

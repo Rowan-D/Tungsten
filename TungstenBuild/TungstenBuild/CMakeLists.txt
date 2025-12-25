@@ -17,6 +17,9 @@ configure_file(
 # Add Rapid YAML
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/rapidlyaml)
 
+# Add CSV Parser
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/csv-parser)
+
 # Add TungstenUtils
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../external/TungstenUtils ${CMAKE_BINARY_DIR}/external/TungstenUtils)
 
@@ -35,6 +38,7 @@ target_compile_features(TungstenBuild PUBLIC cxx_std_20)
 target_link_libraries(TungstenBuild
     PUBLIC TungstenUtils
     PRIVATE ryml
+    PRIVATE csv
 )
 
 set_target_properties(TungstenBuild PROPERTIES

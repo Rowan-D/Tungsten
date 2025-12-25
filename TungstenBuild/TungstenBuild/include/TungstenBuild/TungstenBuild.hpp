@@ -2,7 +2,6 @@
 #define TUNGSTEN_BUILD_TUNGSTEN_BUILD_HPP
 
 #include "TungstenUtils/TungstenUtils.hpp"
-#include <optional>
 #include <filesystem>
 
 namespace wBuild
@@ -22,45 +21,46 @@ namespace wBuild
     public:
         TungstenBuild();
 
-        inline bool GetIsVarSet(Var type) const { W_ASSERT(type != Var::COUNT, "Var type cannot be set to Var::COUNT!"); return m_varSet[static_cast<std::size_t>(type)]; }
-        std::optional<std::filesystem::path> GetVar(Var type) const;
-        void SetVar(Var type, const std::filesystem::path& value);
-        inline void ClearVar(Var type) { W_ASSERT(type != Var::COUNT, "Var type cannot be set to Var::COUNT!"); m_varSet[static_cast<std::size_t>(type)] = false; }
+        [[nodiscard]] inline bool GetIsVarSet(Var type) const noexcept { W_ASSERT(type != Var::COUNT, "Var type cannot be set to Var::COUNT!"); return !m_vars[static_cast<std::size_t>(type)].empty(); }
+        [[nodiscard]] inline const std::filesystem::path GetVar(Var type) const { W_ASSERT(type != Var::COUNT, "Var type cannot be set to Var::COUNT"); return m_vars[static_cast<std::size_t>(type)]; }
+        inline void SetVar(Var type, const std::filesystem::path& value) { W_ASSERT(type != Var::COUNT, "Var type cannot be set to Var::COUNT"); m_vars[static_cast<std::size_t>(type)] = value; }
+        inline void ClearVar(Var type) noexcept { W_ASSERT(type != Var::COUNT, "Var type cannot be set to Var::COUNT!"); m_vars[static_cast<std::size_t>(type)].clear(); }
 
         inline bool GetIsWorkspacePathSet() const { return GetIsVarSet(Var::WorkspacePath); }
-        inline std::optional<std::filesystem::path> GetWorkspacePath() const { return GetVar(Var::WorkspacePath); }
+        inline std::filesystem::path GetWorkspacePath() const { return GetVar(Var::WorkspacePath); }
         inline void SetWorkspacePath(const std::filesystem::path& workspacePath) { SetVar(Var::WorkspacePath, workspacePath); }
         inline void ClearWorkspacePath() { ClearVar(Var::WorkspacePath); }
 
         inline bool GetIsProjectPathSet() const { return GetIsVarSet(Var::ProjectPath); }
-        inline std::optional<std::filesystem::path> GetProjectPath() const { return GetVar(Var::ProjectPath); }
+        inline std::filesystem::path GetProjectPath() const { return GetVar(Var::ProjectPath); }
         inline void SetProjectPath(const std::filesystem::path& projectPath) { SetVar(Var::ProjectPath, projectPath); }
         inline void ClearProjectPath() { ClearVar(Var::ProjectPath); }
 
         inline bool GetIsEngineDirSet() const { return GetIsVarSet(Var::EngineDir); }
-        inline std::optional<std::filesystem::path> GetEngineDir() const { return GetVar(Var::EngineDir); }
+        inline std::filesystem::path GetEngineDir() const { return GetVar(Var::EngineDir); }
         inline void SetEngineDir(const std::filesystem::path& engineDir) { SetVar(Var::EngineDir, engineDir); }
         inline void ClearEngineDir() { ClearVar(Var::EngineDir); }
 
         inline bool GetIsIntDirSet() const { return GetIsVarSet(Var::IntDir); }
-        inline std::optional<std::filesystem::path> GetIntDir() const { return GetVar(Var::IntDir); }
+        inline std::filesystem::path GetIntDir() const { return GetVar(Var::IntDir); }
         inline void SetIntDir(const std::filesystem::path& intDir) { SetVar(Var::IntDir, intDir); }
         inline void ClearIntDir() { ClearVar(Var::IntDir); }
 
         inline bool GetIsBuildDirSet() const { return GetIsVarSet(Var::BuildDir); }
-        inline std::optional<std::filesystem::path> GetBuildDir() const { return GetVar(Var::BuildDir); }
+        inline std::filesystem::path GetBuildDir() const { return GetVar(Var::BuildDir); }
         inline void SetBuildDir(const std::filesystem::path& buildDir) { SetVar(Var::BuildDir, buildDir); }
         inline void ClearBuildDir() { ClearVar(Var::BuildDir); }
 
-        std::optional<std::filesystem::path> GetProjectFilePath(const std::filesystem::path& inputPath);
+        [[nodiscard]] std::filesystem::path GetProjectFilePath(const std::filesystem::path& inputPath);
         bool SetupWorkspace();
         bool BuildProject();
 
         wUtils::TungstenLogger errorList;
 
     private:
-        bool m_varSet[static_cast<std::size_t>(Var::COUNT)];
-        std::filesystem::path m_vars[static_cast<std::size_t>(Var::COUNT)];
+        [[nodiscard]] bool ExecutableDir();
+        std::filesystem::path m_executableDir;
+        std::filesystem::path m_vars[static_cast<std::size_t>(Var::COUNT)]{};
     };
 }
 
