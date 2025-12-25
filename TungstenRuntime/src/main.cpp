@@ -1,5 +1,6 @@
 #include "TungstenCore/TungstenCore.hpp"
-#include "generated/projectDefines.hpp"
+#include "generated/componentDeclorations.hpp"
+#include "generated/componentIncludes.hpp"
 
 // Forward declorations
 //#define W_COMPONENT_X(Type, Name, Include) class Type;

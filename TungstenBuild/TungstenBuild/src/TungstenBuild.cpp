@@ -174,7 +174,7 @@ namespace wBuild
             csv::CSVReader reader(componentListFile);
             for (csv::CSVRow& row : reader) {
                 std::cout << "Type: " << row["Type"].get<std::string>()
-                          << "Include: " << row["Include"].get<std::string>() << '\n';
+                          << ", Include: " << row["Include"].get<std::string>() << '\n';
                  
             }
 
@@ -202,14 +202,22 @@ namespace wBuild
                 { "@TUNGSTEN_RUNTIME_SOURCE_DIR@", tungstenRuntimeSourceDirStr }
             }};
 
-            //const std::array<std::pair<std::string_view, std::string_view>, 1> generatedProjectDefinesReplacements = {{
-            //    { "@TUNGSTEN_PROJECT_COMPONENT_LIST_INCLUDE@", componentListInclude }
-            //}};
+            std::string componentDeclorations;
+            std::string componentIncludes;
+
+            const std::array<std::pair<std::string_view, std::string_view>, 1> componentDeclorationsReplacements = {{
+                { "@COMPONENT_DECLORATIONS@", componentDeclorations }
+            }};
+
+            const std::array<std::pair<std::string_view, std::string_view>, 1> componentIncludesReplacements = {{
+                { "@COMPONENT_INCLUDES@", componentIncludes }
+            }};
 
             RenderTemplateFile(tungstenBuildResDir / "wRuntimeWorkspace.CMakeLists.txt.in", m_vars[IntDirVarIndex] / "CMakeLists.txt", wRuntimeWorkspaceCMakeListsReplacements);
             fs::create_directory(m_vars[IntDirVarIndex] / "include");
             fs::create_directory(m_vars[IntDirVarIndex] / "include/generated");
-            //RenderTemplateFile(tungstenResDir / "projectDefines.hpp.in", m_vars[IntDirVarIndex] / "include/generated/projectDefines.hpp", generatedProjectDefinesReplacements);
+            RenderTemplateFile(tungstenBuildResDir / "componentDeclorations.hpp.in", m_vars[IntDirVarIndex] / "include/generated/componentDeclorations.hpp", componentDeclorationsReplacements);
+            RenderTemplateFile(tungstenBuildResDir / "componentIncludes.hpp.in", m_vars[IntDirVarIndex] / "include/generated/componentIncludes.hpp", componentIncludesReplacements);
 
             const fs::path buildDir = fs::absolute(m_vars[IntDirVarIndex] / "build");
             fs::create_directory(buildDir);
