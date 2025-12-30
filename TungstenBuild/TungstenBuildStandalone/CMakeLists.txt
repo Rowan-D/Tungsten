@@ -34,10 +34,14 @@ set_target_properties(TungstenBuildStandalone PROPERTIES
     VERSION ${PROJECT_VERSION}
 )
 
-add_custom_command(TARGET TungstenBuildStandalone POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E rm -rf
-            "$<TARGET_FILE_DIR:TungstenBuildStandalone>/tungstenbuild_data"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_LIST_DIR}/../TungstenBuild/res/tungstenbuild_data"
-            "$<TARGET_FILE_DIR:TungstenBuildStandalone>/tungstenbuild_data"
+set(SRC_DATA_DIR "${CMAKE_CURRENT_LIST_DIR}/../TungstenBuild/res/tungstenbuild_data")
+set(DST_DATA_DIR "$<TARGET_FILE_DIR:TungstenBuildStandalone>/tungstenbuild_data")
+
+add_custom_target(TungstenBuildDataCopy ALL
+  COMMAND ${CMAKE_COMMAND} -E rm -rf "${DST_DATA_DIR}"
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "${SRC_DATA_DIR}" "${DST_DATA_DIR}"
+  VERBATIM
 )
+
+# IMPORTANT: copy depends on exe (not the other way around)
+add_dependencies(TungstenBuildDataCopy TungstenBuildStandalone)

@@ -7,6 +7,7 @@
 #include <ryml_std.hpp>
 
 #include <csv.hpp>
+#include <string_view>
 
 #include "TungstenBuild/TungstenBuild.hpp"
 #include "TungstenUtils/ReadFile.hpp"
@@ -173,12 +174,46 @@ namespace wBuild
             }
             csv::CSVReader reader(componentListFile);
 
-            std::string componentDeclorations;
+            std::string componentDeclarations;
             std::string componentIncludes;
 
+            std::string lastNamespace;
             for (csv::CSVRow& row : reader) {
-                std::cout << "Type: " << row["Type"].get<std::string>() << ", Include: " << row["Include"].get<std::string>() << '\n';
-                 
+                std::string namespaceAndTypeName = row["TypeName"].get<std::string>();
+                std::size_t pos = namespaceAndTypeName.rfind("::");
+                std::string declaration = row["Declaration"].get<std::string>();
+                if (pos == std::string_view::npos) // no namespace
+                {
+                    if (!lastNamespace.empty())
+                    {
+                        componentDeclarations += "}\n";
+                    }
+                    componentDeclarations += declaration + ' ' + namespaceAndTypeName;
+                    lastNamespace.clear();
+                }
+                else // namespace
+                {
+                    std::string ns = namespaceAndTypeName.substr(0, pos);
+                    if (ns != lastNamespace)
+                    {
+                        if (!lastNamespace.empty())
+                        {
+                            componentDeclarations += "}\n";
+                        }
+                        componentDeclarations += fmt::format(fmt::runtime("namespace {}\n"), ns);
+                        componentDeclarations += "{\n";
+                        lastNamespace = std::move(ns);
+                    }
+                    componentDeclarations += fmt::format(fmt::runtime("    {} {};\n"), declaration, namespaceAndTypeName.substr(pos + 2));
+                }
+
+                componentIncludes += "#include \"";
+                componentIncludes += row["Include"].get<std::string>();
+                componentIncludes += "\"\n";                
+            }
+            if (!lastNamespace.empty())
+            {
+                componentDeclarations += "}\n";
             }
 
             const std::string projectName = projectFilePath.stem().string();
@@ -204,8 +239,8 @@ namespace wBuild
                 { "@TUNGSTEN_RUNTIME_SOURCE_DIR@", tungstenRuntimeSourceDirStr }
             }};
 
-            const std::array<std::pair<std::string_view, std::string_view>, 1> componentDeclorationsReplacements = {{
-                { "@COMPONENT_DECLORATIONS@", componentDeclorations }
+            const std::array<std::pair<std::string_view, std::string_view>, 1> componentDeclarationsReplacements = {{
+                { "@COMPONENT_DECLORATIONS@", componentDeclarations }
             }};
 
             const std::array<std::pair<std::string_view, std::string_view>, 1> componentIncludesReplacements = {{
@@ -215,7 +250,7 @@ namespace wBuild
             RenderTemplateFile(tungstenBuildResDir / "wRuntimeWorkspace.CMakeLists.txt.in", m_vars[IntDirVarIndex] / "CMakeLists.txt", wRuntimeWorkspaceCMakeListsReplacements);
             fs::create_directory(m_vars[IntDirVarIndex] / "include");
             fs::create_directory(m_vars[IntDirVarIndex] / "include/generated");
-            RenderTemplateFile(tungstenBuildResDir / "componentDeclorations.hpp.in", m_vars[IntDirVarIndex] / "include/generated/componentDeclorations.hpp", componentDeclorationsReplacements);
+            RenderTemplateFile(tungstenBuildResDir / "componentDeclarations.hpp.in", m_vars[IntDirVarIndex] / "include/generated/componentDeclarations.hpp", componentDeclarationsReplacements);
             RenderTemplateFile(tungstenBuildResDir / "componentIncludes.hpp.in", m_vars[IntDirVarIndex] / "include/generated/componentIncludes.hpp", componentIncludesReplacements);
 
             const fs::path buildDir = fs::absolute(m_vars[IntDirVarIndex] / "build");

@@ -1,5 +1,5 @@
 #include "TungstenCore/TungstenCore.hpp"
-#include "generated/componentDeclorations.hpp"
+#include "generated/componentDeclarations.hpp"
 #include "generated/componentIncludes.hpp"
 
 // Forward declorations
