@@ -1,5 +1,4 @@
 #include <array>
-#include <cerrno>
 #include <span>
 #include <cstdlib>
 
