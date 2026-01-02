@@ -184,7 +184,8 @@ namespace wBuild
 
                 W_LOG_INFO(errorList, "Reading componentListFile");
                 csv::CSVReader reader(componentListFile);
-
+                const bool hasPageSize = reader.get_col_names().count("PageSize") > 0;
+                
                 for (csv::CSVRow& row : reader) {
                     std::string namespaceAndTypeName = row["TypeName"].get<std::string>();
                     if (!first)
@@ -272,7 +273,7 @@ namespace wBuild
             const std::array<std::pair<std::string_view, std::string_view>, 3> componentDeclarationsReplacements = {{
                 { "@COMPONENT_DECLORATIONS@", componentDeclarations },
                 { "@COMPONENT_LIST@", componentList },
-                { "@COMPONENT_SETTINGS_INCLUDES@", componentSettingsIncludes }
+                { "@PAGED_COMPONENT_COUNT@", pagedComponentCount }
             }};
 
             const std::array<std::pair<std::string_view, std::string_view>, 1> componentIncludesReplacements = {{
