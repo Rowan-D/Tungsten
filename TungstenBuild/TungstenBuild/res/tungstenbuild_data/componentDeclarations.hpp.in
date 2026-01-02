@@ -7,8 +7,7 @@
 namespace wProject::Generated
 {
     using ComponentTypes = wCore::ComponentList<@COMPONENT_LIST@>;
-
-    constexpr wIndex pagedComponentCount = @PAGED_COMPONENT_COUNT@;
 }
 
+@COMPONENT_SETTINGS_INCLUDES@
 #endif
