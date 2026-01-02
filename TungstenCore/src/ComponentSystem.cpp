@@ -1,6 +1,8 @@
 #include "wCorePCH.hpp"
 #include "TungstenCore/ComponentSystem.hpp"
 
+#include "TungstenCore/ComponentSetup.hpp"
+
 namespace wCore
 {
     ComponentSystem::ComponentSystem(Application& app) noexcept
@@ -23,60 +25,55 @@ namespace wCore
 
     void ComponentSystem::ReallocateScenes(wIndex newCapacity)
     {
-        /*m_sceneCapacity = newCapacity;
+        m_sceneCapacity = newCapacity;
 
-        if (!m_scenes) // TODO: Check if this if should be !
-        {
-            m_createCtx.UpdateCurrentComponentListCount(m_componentSetup.GetComponentTypeCount(), m_componentSetup.m_componentListCount);
-        }
+        /*std::size_t offset = 0;
 
-        std::size_t offset = 0;
-
-        offset = wUtils::AlignUp(offset, alignof(ComponentSetup::ComponentListHeaderHot));
+        offset = wUtils::AlignUp(offset, alignof(ComponentListHeaderHot));
         const std::size_t componentListHotOffset = offset;
-        offset += m_createCtx.GetCurrentComponentListCount() * newCapacity * sizeof(ComponentSetup::ComponentListHeaderHot);
+        offset += wProject::Generated::ComponentTypes::count * sizeof(ComponentListHeaderHot) * newCapacity;
 
-        offset = wUtils::AlignUp(offset, alignof(ComponentSetup::PageListHeaderHot));
+        offset = wUtils::AlignUp(offset, alignof(PageListHeaderHot));
         const std::size_t pageListHotOffset = offset;
-        offset += m_createCtx.GetCurrentPageListCount() * newCapacity * sizeof(ComponentSetup::PageListHeaderHot);
+        offset += m_createCtx.GetCurrentPageListCount() * newCapacity * sizeof(PageListHeaderHot);
 
         offset = wUtils::AlignUp(offset, alignof(SceneGeneration));
         const std::size_t sceneGenerationOffset = offset;
         offset += newCapacity * sizeof(SceneGeneration);
 
-        offset = wUtils::AlignUp(offset, alignof(ComponentSetup::ComponentListHeaderCold));
+        offset = wUtils::AlignUp(offset, alignof(ComponentListHeaderCold));
         const std::size_t componentListColdOffset = offset;
-        offset += m_createCtx.GetCurrentComponentListCount() * newCapacity * sizeof(ComponentSetup::ComponentListHeaderCold);
+        offset += m_createCtx.GetCurrentComponentListCount() * newCapacity * sizeof(ComponentListHeaderCold);
 
-        offset = wUtils::AlignUp(offset, alignof(ComponentSetup::PageListHeaderCold));
+        offset = wUtils::AlignUp(offset, alignof(PageListHeaderCold));
         const std::size_t pageListColdOffset = offset;
-        offset += m_createCtx.GetCurrentPageListCount() * newCapacity * sizeof(ComponentSetup::PageListHeaderCold);
+        offset += m_createCtx.GetCurrentPageListCount() * newCapacity * sizeof(PageListHeaderCold);
 
         offset = wUtils::AlignUp(offset, alignof(SceneData));
         const std::size_t sceneDataOffset = offset;
         offset += newCapacity * sizeof(SceneData);
 
-        constexpr std::size_t alignment = wUtils::MaxAlignOf<ComponentSetup::ComponentListHeaderHot, ComponentSetup::PageListHeaderHot, SceneGeneration, ComponentSetup::ComponentListHeaderCold, ComponentSetup::PageListHeaderCold, SceneData>;
+        constexpr std::size_t alignment = wUtils::MaxAlignOf<ComponentListHeaderHot, PageListHeaderHot, SceneGeneration, ComponentListHeaderCold, PageListHeaderCold, SceneData>;
         if (m_scenes)
         {
             std::byte* newScenes = static_cast<std::byte*>(
                 ::operator new(offset, std::align_val_t(alignment))
             );
 
-            ComponentSetup::ComponentListHeaderHot* newComponentListsHot = reinterpret_cast<ComponentSetup::ComponentListHeaderHot*>(newScenes + componentListHotOffset);
-            ComponentSetup::PageListHeaderHot* newPageListsHot = reinterpret_cast<ComponentSetup::PageListHeaderHot*>(newScenes + pageListHotOffset);
+            ComponentListHeaderHot* newComponentListsHot = reinterpret_cast<ComponentListHeaderHot*>(newScenes + componentListHotOffset);
+            PageListHeaderHot* newPageListsHot = reinterpret_cast<PageListHeaderHot*>(newScenes + pageListHotOffset);
             SceneGeneration* newSceneGenerations = reinterpret_cast<SceneGeneration*>(newScenes + sceneGenerationOffset);
-            ComponentSetup::ComponentListHeaderCold* newComponentListsCold = reinterpret_cast<ComponentSetup::ComponentListHeaderCold*>(newScenes + componentListColdOffset);
-            ComponentSetup::PageListHeaderCold* newPageListsCold = reinterpret_cast<ComponentSetup::PageListHeaderCold*>(newScenes + pageListColdOffset);
+            ComponentListHeaderCold* newComponentListsCold = reinterpret_cast<ComponentListHeaderCold*>(newScenes + componentListColdOffset);
+            PageListHeaderCold* newPageListsCold = reinterpret_cast<PageListHeaderCold*>(newScenes + pageListColdOffset);
             SceneData* newSceneData = reinterpret_cast<SceneData*>(newScenes + sceneDataOffset);
 
             if (m_sceneSlotCount)
             {
-                std::memcpy(newComponentListsHot, m_createCtx.componentListsHot, m_sceneSlotCount * m_createCtx.GetCurrentComponentListCount() * sizeof(ComponentSetup::ComponentListHeaderHot));
-                std::memcpy(newPageListsHot, m_createCtx.pageListsHot, m_sceneSlotCount * m_createCtx.GetCurrentPageListCount() * sizeof(ComponentSetup::PageListHeaderHot));
+                std::memcpy(newComponentListsHot, m_createCtx.componentListsHot, m_sceneSlotCount * m_createCtx.GetCurrentComponentListCount() * sizeof(ComponentListHeaderHot));
+                std::memcpy(newPageListsHot, m_createCtx.pageListsHot, m_sceneSlotCount * m_createCtx.GetCurrentPageListCount() * sizeof(PageListHeaderHot));
                 std::memcpy(newSceneGenerations, m_sceneGenerations, m_sceneSlotCount * sizeof(SceneGeneration));
-                std::memcpy(newComponentListsCold, m_createCtx.componentListsCold, m_sceneSlotCount * m_createCtx.GetCurrentComponentListCount() * sizeof(ComponentSetup::ComponentListHeaderCold));
-                std::memcpy(newPageListsCold, m_createCtx.pageListsCold, m_sceneSlotCount * m_createCtx.GetCurrentPageListCount() * sizeof(ComponentSetup::ComponentListHeaderCold));
+                std::memcpy(newComponentListsCold, m_createCtx.componentListsCold, m_sceneSlotCount * m_createCtx.GetCurrentComponentListCount() * sizeof(ComponentListHeaderCold));
+                std::memcpy(newPageListsCold, m_createCtx.pageListsCold, m_sceneSlotCount * m_createCtx.GetCurrentPageListCount() * sizeof(ComponentListHeaderCold));
                 std::memcpy(newSceneData, m_sceneData, m_sceneSlotCount * sizeof(SceneData));
             }
 
@@ -91,11 +88,11 @@ namespace wCore
             );
         }
 
-        m_createCtx.componentListsHot = reinterpret_cast<ComponentSetup::ComponentListHeaderHot*>(m_scenes + componentListHotOffset);
-        m_createCtx.pageListsHot = reinterpret_cast<ComponentSetup::PageListHeaderHot*>(m_scenes + pageListHotOffset);
+        m_createCtx.componentListsHot = reinterpret_cast<ComponentListHeaderHot*>(m_scenes + componentListHotOffset);
+        m_createCtx.pageListsHot = reinterpret_cast<PageListHeaderHot*>(m_scenes + pageListHotOffset);
         m_sceneGenerations = reinterpret_cast<SceneGeneration*>(m_scenes + sceneGenerationOffset);
-        m_createCtx.componentListsCold = reinterpret_cast<ComponentSetup::ComponentListHeaderCold*>(m_scenes + componentListColdOffset);
-        m_createCtx.pageListsCold = reinterpret_cast<ComponentSetup::PageListHeaderCold*>(m_scenes + pageListColdOffset);
+        m_createCtx.componentListsCold = reinterpret_cast<ComponentListHeaderCold*>(m_scenes + componentListColdOffset);
+        m_createCtx.pageListsCold = reinterpret_cast<PageListHeaderCold*>(m_scenes + pageListColdOffset);
         m_sceneData = reinterpret_cast<SceneData*>(m_scenes + sceneDataOffset);*/
     }
 }

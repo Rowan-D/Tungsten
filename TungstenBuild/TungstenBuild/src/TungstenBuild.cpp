@@ -149,7 +149,7 @@ namespace wBuild
             }
             std::string yamlStr = std::move(*projectFile);
             ryml::Tree tree = ryml::parse_in_place(ryml::to_substr(yamlStr));
-            ryml::NodeRef root = tree.rootref();
+            ryml::ConstNodeRef root = tree.crootref();
             
             if (!root.has_child("targetName"))
             {
@@ -158,62 +158,93 @@ namespace wBuild
             }
 
             const c4::csubstr targetNameVal = root["targetName"].val();
-            const c4::csubstr componentListRelitivePathVal = root["componentList"].val();
             const std::string_view targetName(targetNameVal.str, targetNameVal.len);
-            const std::string_view componentListRelitivePathStrView(componentListRelitivePathVal.str, componentListRelitivePathVal.len);
             const fs::path projectDir = projectFilePath.parent_path();
-            const fs::path componentListPath = projectDir / fs::path(componentListRelitivePathStrView);
-            W_LOG_INFO(errorList, "componentListPath: {}", componentListPath.string());
 
-
-            std::ifstream componentListFile(componentListPath);
-            if (!componentListFile)
-            {
-                W_LOG_ERROR(errorList, "Failed to open componentListFile: {}", componentListPath.string());
-                return false;
-            }
-            csv::CSVReader reader(componentListFile);
-
+            std::string componentList;
             std::string componentDeclarations;
             std::string componentIncludes;
 
+            bool first = true;
             std::string lastNamespace;
-            for (csv::CSVRow& row : reader) {
-                std::string namespaceAndTypeName = row["TypeName"].get<std::string>();
-                std::size_t pos = namespaceAndTypeName.rfind("::");
-                std::string declaration = row["Declaration"].get<std::string>();
-                if (pos == std::string_view::npos) // no namespace
+            ryml::ConstNodeRef componentListsSeq = root["componentLists"];
+            for (std::size_t componentListIndex = 0; componentListIndex < componentListsSeq.num_children(); ++componentListIndex)
+            {
+                const c4::csubstr componentListRelitivePathVal = componentListsSeq[componentListIndex].val();
+                const std::string_view componentListRelitivePathStrView(componentListRelitivePathVal.str, componentListRelitivePathVal.len);
+                const fs::path componentListPath = projectDir / fs::path(componentListRelitivePathStrView);
+
+                W_LOG_INFO(errorList, "componentListPath: {}", componentListPath.string());
+
+                std::ifstream componentListFile(componentListPath);
+                if (!componentListFile)
                 {
-                    if (!lastNamespace.empty())
-                    {
-                        componentDeclarations += "}\n";
-                    }
-                    componentDeclarations += declaration + ' ' + namespaceAndTypeName;
-                    lastNamespace.clear();
+                    W_LOG_ERROR(errorList, "Failed to open componentListFile: {}", componentListPath.string());
+                    return false;
                 }
-                else // namespace
-                {
-                    std::string ns = namespaceAndTypeName.substr(0, pos);
-                    if (ns != lastNamespace)
+
+                W_LOG_INFO(errorList, "Reading componentListFile");
+                csv::CSVReader reader(componentListFile);
+
+                for (csv::CSVRow& row : reader) {
+                    std::string namespaceAndTypeName = row["TypeName"].get<std::string>();
+                    if (!first)
+                    {
+                        componentList += ", ";
+                    }
+                    componentList += namespaceAndTypeName;
+                    const std::size_t pos = namespaceAndTypeName.rfind("::");
+                    const std::string declaration = row["Declaration"].get<std::string>();
+                    if (pos == std::string_view::npos) // no namespace
                     {
                         if (!lastNamespace.empty())
                         {
                             componentDeclarations += "}\n";
                         }
-                        componentDeclarations += fmt::format(fmt::runtime("namespace {}\n"), ns);
-                        componentDeclarations += "{\n";
-                        lastNamespace = std::move(ns);
+                        componentDeclarations += declaration + ' ' + namespaceAndTypeName;
+                        lastNamespace.clear();
                     }
-                    componentDeclarations += fmt::format(fmt::runtime("    {} {};\n"), declaration, namespaceAndTypeName.substr(pos + 2));
-                }
+                    else // namespace
+                    {
+                        const std::string_view qualifiedTypeName = namespaceAndTypeName;
+                        const std::string_view ns = qualifiedTypeName.substr(0, pos);
+                        if (ns != lastNamespace)
+                        {
+                            if (!lastNamespace.empty())
+                            {
+                                componentDeclarations += "}\n";
+                            }
+                            componentDeclarations += fmt::format(fmt::runtime("namespace {}\n"), ns);
+                            componentDeclarations += "{\n";
+                            namespaceAndTypeName.resize(pos);
+                            lastNamespace = std::move(namespaceAndTypeName);
+                        }
+                        componentDeclarations += fmt::format(fmt::runtime("    {} {};\n"), declaration, qualifiedTypeName.substr(pos + 2));
+                    }
 
-                componentIncludes += "#include \"";
-                componentIncludes += row["Include"].get<std::string>();
-                componentIncludes += "\"\n";                
+                    componentIncludes += "#include \"";
+                    componentIncludes += row["Include"].get<std::string>();
+                    componentIncludes += "\"\n";
+
+                    first = false;
+                }
+                W_LOG_INFO(errorList, "Read componentListFile");
             }
             if (!lastNamespace.empty())
             {
                 componentDeclarations += "}\n";
+            }
+            
+            std::string componentSettingsIncludes;
+            ryml::ConstNodeRef componentSettingsIncludesSeq = root["componentSettingsIncludes"];
+            for (std::size_t componentSettingsIncludeIndex = 0; componentSettingsIncludeIndex < componentSettingsIncludesSeq.num_children(); ++componentSettingsIncludeIndex)
+            {
+                const c4::csubstr componentSettingsIncludeVal = componentSettingsIncludesSeq[componentSettingsIncludeIndex].val();
+                const std::string_view componentSettingsIncludeStrView(componentSettingsIncludeVal.str, componentSettingsIncludeVal.len);
+                
+                componentSettingsIncludes += "#include \"";
+                componentSettingsIncludes += componentSettingsIncludeStrView;
+                componentSettingsIncludes += "\"\n";
             }
 
             const std::string projectName = projectFilePath.stem().string();
@@ -239,8 +270,10 @@ namespace wBuild
                 { "@TUNGSTEN_RUNTIME_SOURCE_DIR@", tungstenRuntimeSourceDirStr }
             }};
 
-            const std::array<std::pair<std::string_view, std::string_view>, 1> componentDeclarationsReplacements = {{
-                { "@COMPONENT_DECLORATIONS@", componentDeclarations }
+            const std::array<std::pair<std::string_view, std::string_view>, 3> componentDeclarationsReplacements = {{
+                { "@COMPONENT_DECLORATIONS@", componentDeclarations },
+                { "@COMPONENT_LIST@", componentList },
+                { "@COMPONENT_SETTINGS_INCLUDES@", componentSettingsIncludes }
             }};
 
             const std::array<std::pair<std::string_view, std::string_view>, 1> componentIncludesReplacements = {{

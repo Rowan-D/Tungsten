@@ -1,5 +1,13 @@
 #ifndef TUNGSTEN_RUNTIME_GENERATED_COMPONENT_DECLORATIONS_HPP
 #define TUNGSTEN_RUNTIME_GENERATED_COMPONENT_DECLORATIONS_HPP
 
+#include "TungstenCore/ComponentList.hpp"
+
 @COMPONENT_DECLORATIONS@
+namespace wProject::Generated
+{
+    using ComponentTypes = wCore::ComponentList<@COMPONENT_LIST@>;
+}
+
+@COMPONENT_SETTINGS_INCLUDES@
 #endif

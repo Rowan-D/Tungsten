@@ -15,10 +15,6 @@ add_executable(TungstenRuntime
     src/main.cpp
 )
 
-target_include_directories(TungstenRuntime PUBLIC
-    ${INT_DIR}/include
-)
-
 target_compile_features(TungstenRuntime PUBLIC cxx_std_20)
 
 target_link_libraries(TungstenRuntime PRIVATE Tungsten::ActiveProject)

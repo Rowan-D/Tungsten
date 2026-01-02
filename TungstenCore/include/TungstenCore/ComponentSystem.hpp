@@ -1,7 +1,7 @@
 #ifndef TUNGSTEN_CORE_COMPONENT_SYSTEM_HPP
 #define TUNGSTEN_CORE_COMPONENT_SYSTEM_HPP
 
-#include "TungstenUtils/TungstenUtils.hpp"
+#include "TungstenUtils/wIndex.hpp"
 #include <optional>
 
 namespace wCore
@@ -151,6 +151,34 @@ namespace wCore
             }
             return InitialCapacity;
         }
+
+        struct ComponentListHeaderHot
+        {
+            void* dense;
+            ComponentIndex* slotToDense;
+            ComponentGeneration* generations;
+        };
+
+        struct ComponentListHeaderCold
+        {
+            wIndex slotCount;
+            wIndex denceCount;
+            wIndex capacity;
+            wUtils::RelocatableFreeListHeader<ComponentIndex> freeList;
+        };
+
+        struct PageListHeaderHot
+        {
+            void* data;
+            ComponentGeneration* generations;
+        };
+
+        struct PageListHeaderCold
+        {
+            wIndex slotCount;
+            wIndex pageCount;
+            wUtils::RelocatableFreeListHeader<ComponentIndex> freeList;
+        };
 
         void ReallocateScenes(wIndex newCapacity);
 

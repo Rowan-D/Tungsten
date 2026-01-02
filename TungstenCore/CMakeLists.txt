@@ -32,6 +32,7 @@ add_library(TungstenCore
 target_include_directories(TungstenCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_BINARY_DIR}/include
+    ${INT_DIR}/include
 )
 
 target_compile_features(TungstenCore PUBLIC cxx_std_20)
