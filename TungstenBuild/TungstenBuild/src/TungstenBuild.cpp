@@ -12,6 +12,7 @@
 #include "TungstenUtils/ReadFile.hpp"
 #include "TungstenUtils/WriteFile.hpp"
 #include "TungstenUtils/FindAndReplace.hpp"
+#include "TungstenUtils/parse.hpp"
 #include "TungstenUtils/platform/ExecutablePath.hpp"
 #include "TungstenBuild/Config.hpp"
 
@@ -163,6 +164,7 @@ namespace wBuild
             std::string componentList;
             std::string componentDeclarations;
             std::string componentIncludes;
+            std::string componentPageSizes;
 
             bool first = true;
             std::string lastNamespace;
@@ -184,7 +186,8 @@ namespace wBuild
 
                 W_LOG_INFO(errorList, "Reading componentListFile");
                 csv::CSVReader reader(componentListFile);
-                const bool hasPageSize = reader.get_col_names().count("PageSize") > 0;
+                //const bool hasPageSize = reader.get_col_names().count("PageSize") > 0;
+                std::vector<std::string> colNames = reader.get_col_names();
                 
                 for (csv::CSVRow& row : reader) {
                     std::string namespaceAndTypeName = row["TypeName"].get<std::string>();
@@ -226,6 +229,18 @@ namespace wBuild
                     componentIncludes += row["Include"].get<std::string>();
                     componentIncludes += "\"\n";
 
+                    if (colNames.size() == 4)
+                    {
+                        if (!first)
+                        {
+                            componentPageSizes += ", ";
+                        }
+                        std::string pageSizeStr = row["PageSize"].get<std::string>();
+                        wIndex pageSize = 0;
+                        wUtils::TryParseInteger(pageSizeStr, pageSize);
+                        componentPageSizes += std::to_string(pageSize);
+                    }
+
                     first = false;
                 }
                 W_LOG_INFO(errorList, "Read componentListFile");
@@ -233,18 +248,6 @@ namespace wBuild
             if (!lastNamespace.empty())
             {
                 componentDeclarations += "}\n";
-            }
-            
-            std::string componentSettingsIncludes;
-            ryml::ConstNodeRef componentSettingsIncludesSeq = root["componentSettingsIncludes"];
-            for (std::size_t componentSettingsIncludeIndex = 0; componentSettingsIncludeIndex < componentSettingsIncludesSeq.num_children(); ++componentSettingsIncludeIndex)
-            {
-                const c4::csubstr componentSettingsIncludeVal = componentSettingsIncludesSeq[componentSettingsIncludeIndex].val();
-                const std::string_view componentSettingsIncludeStrView(componentSettingsIncludeVal.str, componentSettingsIncludeVal.len);
-                
-                componentSettingsIncludes += "#include \"";
-                componentSettingsIncludes += componentSettingsIncludeStrView;
-                componentSettingsIncludes += "\"\n";
             }
 
             const std::string projectName = projectFilePath.stem().string();
@@ -273,7 +276,7 @@ namespace wBuild
             const std::array<std::pair<std::string_view, std::string_view>, 3> componentDeclarationsReplacements = {{
                 { "@COMPONENT_DECLORATIONS@", componentDeclarations },
                 { "@COMPONENT_LIST@", componentList },
-                { "@PAGED_COMPONENT_COUNT@", pagedComponentCount }
+                { "@COMPONENT_PAGE_SIZES@", componentPageSizes }
             }};
 
             const std::array<std::pair<std::string_view, std::string_view>, 1> componentIncludesReplacements = {{
