@@ -3,6 +3,9 @@
 
 #include "ComponentSetup.hpp"
 #include "TungstenUtils/wIndex.hpp"
+#include "TungstenUtils/alignment.hpp"
+#include "TungstenUtils/RelocatableFreeListHeader.hpp"
+#include "TungstenUtils/FreeList.hpp"
 #include <optional>
 
 namespace wCore
@@ -69,7 +72,7 @@ namespace wCore
         void ReserveScenes(wIndex minCapacity);
         inline void ReserveSceneFreeList(wIndex minCapacity) { m_sceneFreeList.Reserve(minCapacity); }
         [[nodiscard]] SceneHandle CreateScene();
-        [[nodiscard]] inline bool SceneExists(SceneHandle sceneHandle) const noexcept { return sceneIndex - sceneIndexStart < m_sceneSlotCount && sceneHandle.generation == m_sceneSlots[sceneHandle.sceneIndex - sceneIndexStart].generation; }
+        [[nodiscard]] inline bool SceneExists(SceneHandle sceneHandle) const noexcept { return sceneHandle.sceneIndex <= m_sceneSlotCount && sceneHandle.generation == m_sceneGenerations[sceneHandle.sceneIndex - sceneIndexStart]; }
         void DestroyScene(SceneIndex sceneIndex) noexcept;
         void DestroyScene(SceneHandle sceneHandle) noexcept;
 
@@ -82,20 +85,19 @@ namespace wCore
         template<typename T>
         void ReserveComponents(SceneIndex sceneIndex, wIndex minCapacity)
         {
-            const SceneSlot& sceneSlot = m_sceneSlots[sceneIndex - sceneIndexStart];
+            const SceneIndex sceneDenseIndex = m_sceneSlotToDense[sceneIndex - sceneIndexStart];
             if constexpr (componentPageSize_v<T>)
             {
-                const std::size_t pageListHeaderIndex = sceneSlot.denseIndex * componentSetup.pageListCount + componentListIndex_v<T>;
+                const wIndex pageListHeaderIndex = sceneDenseIndex * componentSetup.pageListCount + componentListIndex_v<T>;
                 PageListHeaderCold& pageListHeaderCold = m_pageListsCold[pageListHeaderIndex];
                 if (minCapacity > pageListHeaderCold.pageCount * componentPageSize_v<T>)
                 {
-                    const wIndex minPageCount = wUtils::IntDivCeil(minCapacity, componentPageSize_v<T>);
-                    ReallocatePages<T>(m_pageListsHot[pageListHeaderIndex], pageListHeaderCold, minPageCount);
+                    ReallocatePages<T>(m_pageListsHot[pageListHeaderIndex], pageListHeaderCold, wUtils::IntDivCeil(minCapacity, componentPageSize_v<T>));
                 }
             }
             else
             {
-                const std::size_t componentListHeaderIndex = sceneSlot.denseIndex * componentSetup.slotListCount + componentListIndex_v<T>;
+                const wIndex componentListHeaderIndex = sceneDenseIndex * componentSetup.slotListCount + componentListIndex_v<T>;
                 ComponentListHeaderCold& componentListHeaderCold = m_componentListsCold[componentListHeaderIndex];
                 if (minCapacity > componentListHeaderCold.capacity)
                 {
@@ -113,7 +115,33 @@ namespace wCore
         bool TryReserveComponentFreeList(SceneHandle sceneHandle, wIndex minCapacity);
 
         template<typename T>
-        [[nodiscard]] ComponentHandle<T> CreateComponent(SceneIndex sceneIndex);
+        [[nodiscard]] ComponentHandle<T> CreateComponent(SceneIndex sceneIndex)
+        {
+            const SceneIndex sceneDenseIndex = m_sceneSlotToDense[sceneIndex - sceneIndexStart];
+            if constexpr (componentPageSize_v<T>)
+            {
+                const wIndex pageListHeaderIndex = sceneDenseIndex * componentSetup.pageListCount + componentListIndex_v<T>;
+                // TODO:
+
+                return ComponentHandle<T>();
+            }
+            else
+            {
+                const wIndex componentListHeaderIndex = sceneDenseIndex * componentSetup.slotListCount + componentListIndex_v<T>;
+                ComponentListHeaderCold& componentListHeaderCold = m_componentListsCold[componentListHeaderIndex];
+                if (componentListHeaderCold.freeList.Empty())
+                {
+                    if (componentListHeaderCold.slotCount == componentListHeaderCold.capacity)
+                    {
+                        ReallocateComponents<T>(m_componentListsHot[componentListHeaderIndex], componentListHeaderCold, wIndex newCapacity)
+                    }
+                    return ComponentHandle<T>();
+                }
+                
+                return ComponentHandle<T>();
+            }
+        }
+
         template<typename T>
         [[nodiscard]] std::optional<ComponentHandle<T>> TryCreateComponent(SceneHandle sceneHandle);
 
@@ -128,7 +156,7 @@ namespace wCore
         void DestroyComponent(ComponentHandle<T> componentHandle) noexcept;
 
         template<typename T>
-        [[nodiscard]] T& GetComponent(SceneIndex sceneHandle, ComponentIndex componentIndex) noexcept;
+        [[nodiscard]] T& GetComponent(SceneIndex sceneIndex, ComponentIndex componentIndex) noexcept;
         template<typename T>
         [[nodiscard]] T* TryGetComponent(SceneHandle sceneHandle, ComponentIndex componentIndex) noexcept;
         template<typename T>
@@ -188,21 +216,11 @@ namespace wCore
             SceneGeneration generation;
         };
 
-        struct ComponentListHeaderHot
-        {
-            void* data;
-        };
-
-        struct PageListHeaderHot
-        {
-            void* data;
-        };
-        
         struct ComponentListHeaderCold
         {
             wIndex slotCount;
             wIndex slotGenerationCount;
-            wIndex denceCount;
+            wIndex denseCount;
             wIndex capacity;
             wUtils::RelocatableFreeListHeader<ComponentIndex> freeList;
         };
@@ -223,8 +241,8 @@ namespace wCore
         void ReallocateScenes(wIndex newCapacity);
 
         template<typename T>
-        static void ReallocatePages(PageListHeaderHot& headerHot, PageListHeaderCold& headerCold, wIndex newPageCount)
-        {T*
+        static void ReallocatePages(void*& data, PageListHeaderCold& headerCold, wIndex newPageCount)
+        {
             std::size_t offset = newPageCount * sizeof(T*);
             
             offset = wUtils::AlignUp(offset, alignof(ComponentGeneration));
@@ -233,73 +251,67 @@ namespace wCore
 
             constexpr std::size_t alignment = wUtils::Max(alignof(T*), alignof(ComponentGeneration));
 
-            if (headerHot.data)
+            std::byte* newMemory = static_cast<std::byte*>(
+                ::operator new(offset, std::align_val_t(alignment))
+            );
+
+            if (data)
             {
-                std::byte* newMemory = static_cast<std::byte*>(
-                    ::operator new(offset, std::align_val_t(alignment))
-                );
 
-                std::memcpy(newMemory, headerHot.data, headerCold.pageCount * sizeof(T*));
-                ::operator delete(headerHot.data, std::align_val_t(alignof(T*)));
+                std::memcpy(newMemory, data, headerCold.pageCount * sizeof(T*));
+                ::operator delete(data, std::align_val_t(alignof(T*)));
 
-                if (headerCold.slotCount)
+                if (headerCold.slotGenerationCount)
                 {
-                    std::memcpy(reinterpret_cast<ComponentGeneration*>(newMemory + componentGenerationOffset), reinterpret_cast<ComponentGeneration*>(headerHot.data + componentGenerationOffset), headerCold.slotCount * sizeof(ComponentGeneration));
+                    std::memcpy(newMemory + componentGenerationOffset, data + componentGenerationOffset, headerCold.slotGenerationCount * sizeof(ComponentGeneration));
                 }
                 
-                headerHot.data = newMemory;
-            }
-            else
-            {
-                headerHot.data = ::operator new(newPageCount * sizeof(T*), std::align_val_t(alignment));
             }
             for (wIndex pageIndex = headerCold.pageCount; pageIndex < newPageCount; ++pageIndex)
             {
                 newMemory[pageIndex] = static_cast<T*>(
-                    ::operator new(PageSize * sizeof(T), std::align_val_t(alignof(T)))
+                    ::operator new(componentPageSize_v<T> * sizeof(T), std::align_val_t(alignof(T)))
                 );
             }
+
+            data = newMemory;
 
             headerCold.pageCount = newPageCount;
         }
 
         template<typename T>
-        static void ReallocateComponents(ComponentListHeaderHot& headerHot, ComponentListHeaderCold& headerCold, wIndex newCapacity)
+        static void ReallocateComponents(void*& data, ComponentListHeaderCold& headerCold, wIndex newCapacity)
         {
             std::size_t offset = newCapacity * sizeof(T);
 
             offset = wUtils::AlignUp(offset, alignof(ComponentIndex));
-            const std::size_t slotToDenceOffset = offset;
+            const std::size_t slotToDenseOffset = offset;
             offset += newCapacity * sizeof(ComponentIndex);
 
             offset = wUtils::AlignUp(offset, alignof(ComponentGeneration));
             const std::size_t componentGenerationOffset = offset;
             offset += newCapacity * sizeof(ComponentGeneration);
 
-            constexpr std::size_t alignment = wUtils::Max(alignof(T), alignof(ComponentIndex), alignof(ComponentGeneration));
+            constexpr std::size_t alignment = wUtils::maxAlignOf_v<T, ComponentIndex, ComponentGeneration>;
 
-
-            if (headerHot.data)
+            if (data)
             {
                 std::byte* newMemory = static_cast<std::byte*>(
                     ::operator new(offset, std::align_val_t(alignment))
                 );
 
-                ComponentIndex* newSlotToDense = reinterpret_cast<ComponentIndex*>(newMemory + slotToDenceOffset);
-                ComponentGeneration* newComponentGenerations = reinterpret_cast<ComponentGeneration*>(newMemory + componentGenerationOffset);
-
                 if constexpr (std::is_trivially_copyable_v<T>)
                 {
                     if (headerCold.denseCount)
                     {
-                        std::memcpy(newMemory, headerHot.dense, headerCold.denseCount * sizeof(T));
+                        std::memcpy(newMemory, data, headerCold.denseCount * sizeof(T));
                     }
                 }
                 else
                 {
-                    T* const begin = static_cast<T*>(headerHot.dense);
-                    T* end = begin + headerCold.denseCount;
-                    T* dst = newMemory;
+                    T* const begin = static_cast<T*>(data);
+                    T* const end = begin + headerCold.denseCount;
+                    T* dst = reinterpret_cast<T*>(newMemory);
                     for (T* src = begin; src != end; ++src, ++dst)
                     {
                         std::construct_at(dst, std::move(*src));
@@ -311,28 +323,32 @@ namespace wCore
                 }
                 if (headerCold.slotCount)
                 {
-                    std::memcpy(newMemory, headerHot.dense, headerCold.slotCount * sizeof(ComponentIndex));
+                    std::memcpy(newMemory + slotToDenseOffset, static_cast<std::byte*>(data) + slotToDenseOffset, headerCold.slotCount * sizeof(ComponentIndex));
                 }
-                ::operator delete(headerHot.dense, std::align_val_t(alignment));
+                if (headerCold.slotGenerationCount)
+                {
+                    std::memcpy(newMemory + componentGenerationOffset, static_cast<std::byte*>(data) + componentGenerationOffset, headerCold.slotGenerationCount * sizeof(ComponentGeneration));
+                }
+
+                ::operator delete(data, std::align_val_t(alignment));
+
+                data = newMemory;
             }
             else
             {
-                headerHot.data = ::operator new(offset, std::align_val_t(alignment));
+                data = ::operator new(offset, std::align_val_t(alignment));
             }
-
-            headerHot.dense = newMemory;
-            headerHot.slotToDense = reinterpret_cast<ComponentIndex*>(newMemory + slotToDenceOffset);
-            headerHot.componentGenerations = reinterpret_cast<ComponentGeneration*>(newMemory + componentGenerationOffset);
-
+            
             headerCold.capacity = newCapacity;
         }
         
         Application& m_app;
 
         std::byte* m_scenes;
-        SceneIndex* m_sceneSlots;
-        ComponentListHeaderHot* m_componentListsHot;
-        PageListHeaderHot* m_pageListsHot;
+        void** m_componentListsHot;
+        void** m_pageListsHot;
+        SceneIndex* m_sceneSlotToDense;
+        SceneGeneration* m_sceneGenerations;
         ComponentListHeaderCold* m_componentListsCold;
         PageListHeaderCold* m_pageListsCold;
         SceneData* m_sceneData;

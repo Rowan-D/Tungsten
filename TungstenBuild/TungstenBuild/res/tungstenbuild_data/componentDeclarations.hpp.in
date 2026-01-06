@@ -6,7 +6,7 @@
 @COMPONENT_DECLORATIONS@
 namespace wProject::Generated
 {
-    using ComponentTypes = wCore::ComponentList<@COMPONENT_LIST@>;
+    using ComponentTypes = wCore::ComponentTypeList<@COMPONENT_LIST@>;
 
     inline constexpr wIndex componentPageSizes[ComponentTypes::count] = { @COMPONENT_PAGE_SIZES@ };
 }

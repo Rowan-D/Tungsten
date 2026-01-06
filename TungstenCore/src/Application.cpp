@@ -11,6 +11,7 @@ namespace wCore
     Application::RunOutput Application::Run()
     {
         W_DEBUG_LOG_INFO("Hello, From Application.Run!");
+
         return Application::RunOutput(0);
     }
 }

@@ -43,7 +43,7 @@ namespace wCore
     inline constexpr ComponentSetup componentSetup{};
 
     template<typename T>
-    inline constexpr wIndex componentListIndex_v = componentSetup[componentTypeIndexOf_v<T> - ComponentTypeIndexStart];
+    inline constexpr wIndex componentListIndex_v = componentSetup.listIndexes[componentTypeIndexOf_v<T> - ComponentTypeIndexStart];
 
 }
 
