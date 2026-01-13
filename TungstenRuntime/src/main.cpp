@@ -8,7 +8,7 @@ int main()
     wCore::ComponentSystem& cs = app.GetComponentSystem();
 
     wCore::SceneHandle mainScene = cs.CreateScene();
-    cs.ReserveComponents<Project::Player>(mainScene.sceneIndex, 5);
+    cs.ReserveComponents<Project::Player>(mainScene.GetSceneIndex(), 5);
 
     return app.Run().exitCode;
 }

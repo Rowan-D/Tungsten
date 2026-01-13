@@ -1,16 +1,11 @@
 #include "wCorePCH.hpp"
-#include "TungstenUtils/alignment.hpp"
 #include "TungstenCore/ComponentSystem.hpp"
-
-#include "TungstenCore/ComponentSetup.hpp"
 
 namespace wCore
 {
     ComponentSystem::ComponentSystem(Application& app) noexcept
         : m_app(app),
-        m_scenes(nullptr), m_componentListsHot(nullptr), m_pageListsHot(nullptr), m_sceneSlotToDense(nullptr), m_sceneGenerations(nullptr), m_componentListsCold(nullptr), m_pageListsCold(nullptr), m_sceneData(nullptr),
-        m_sceneSlotCount(0), m_sceneSlotGenerationCount(0), m_sceneDenseCount(0), m_sceneCapacity(0),
-        m_sceneFreeList()
+        m_sceneMemory{}, m_sceneList{}
     {
     }
 
@@ -18,15 +13,7 @@ namespace wCore
     {
     }
 
-    void ComponentSystem::ReserveScenes(wIndex minCapacity)
-    {
-        if (minCapacity > m_sceneCapacity)
-        {
-            ReallocateScenes(minCapacity);
-        }
-    }
-
-    SceneHandle ComponentSystem::CreateScene()
+    /*SceneHandle ComponentSystem::CreateScene()
     {
         if (m_sceneFreeList.Empty())
         {
@@ -70,7 +57,7 @@ namespace wCore
         m_sceneSlotToDense[sceneIndex - sceneIndexStart] = m_sceneDenseCount++;
 
         return SceneHandle(sceneIndex, m_sceneGenerations[sceneIndex - sceneIndexStart]);
-    }
+    }*/
 
     /*void DestroyScene(SceneIndex sceneIndex) m_sceneGenerationsnoexcept
     {
@@ -80,7 +67,7 @@ namespace wCore
     {
     }*/
 
-    void ComponentSystem::ReallocateScenes(wIndex newCapacity)
+    /*void ComponentSystem::ReallocateScenes(wIndex newCapacity)
     {
         m_sceneCapacity = newCapacity;
 
@@ -164,5 +151,5 @@ namespace wCore
         m_componentListsCold = reinterpret_cast<ComponentListHeaderCold*>(m_scenes + componentListColdOffset);
         m_pageListsCold = reinterpret_cast<PageListHeaderCold*>(m_scenes + pageListColdOffset);
         m_sceneData = reinterpret_cast<SceneData*>(m_scenes + sceneDataOffset);
-    }
+    }*/
 }
