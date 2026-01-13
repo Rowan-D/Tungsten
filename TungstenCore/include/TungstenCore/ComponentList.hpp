@@ -60,39 +60,8 @@ namespace wCore
     template<typename... Lists>
     using Concat_t = typename Concat<Lists...>::type;
 
-    template<typename T, wIndex N>
-    struct TypeCount
-    {
-        using type = T;
-        static constexpr wIndex count = N;
-    };
-
-    template<typename T, typename List>
-    struct IndexOfTypeCount;
-
-    template<typename T, wIndex N, typename... TCs>
-    struct IndexOfTypeCount<T, ComponentTypeList<TypeCount<T, N>, TCs...>>
-    {
-        static constexpr wIndex value = 0;
-    };
-
-    template<typename T, typename TC0, typename... TCs>
-    struct IndexOfTypeCount<T, ComponentTypeList<TC0, TCs...>>
-    {
-        static constexpr wIndex value = 1 + IndexOfTypeCount<T, ComponentTypeList<TCs...>>::value;
-    };
-
-    template<typename T>
-    struct IndexOfTypeCount<T, ComponentTypeList<>>
-    {
-        static_assert(dependent_false_v<T>, "Type not found in ComponentTypeList<TypeCount<...>>");
-    };
-
-    template<typename T, typename List>
-    inline constexpr wIndex IndexOfTypeCount_v = IndexOfTypeCount<T, List>::value;
-
     template<typename HotTypeList, typename ColdTypeList, typename StoragePolicyT, wIndex PageSize = 0>
-    struct ComponentSchema
+    struct ComponentListSchema
     {
         using Hot = HotTypeList;
         using Cold = ColdTypeList;
@@ -104,17 +73,17 @@ namespace wCore
     struct PageListTag {};
 
     template<typename Layout, wIndex N>
-    struct ComponentLayout;
+    struct ComponentListLayout;
     
     template<wIndex N>
-    struct ComponentLayout<SlotListTag, N>
+    struct ComponentListLayout<SlotListTag, N>
     {
         using kind = SlotListTag;
         static constexpr wIndex bufferCount = N + 2;
     };
 
     template<wIndex N>
-    struct ComponentLayout<PageListTag, N>
+    struct ComponentListLayout<PageListTag, N>
     {
         using kind = PageListTag;
         static constexpr wIndex bufferCount = N + 1;
@@ -132,72 +101,44 @@ namespace wCore
         ComponentGeneration generation;
     };
 
-    template<typename List>
-    inline constexpr std::size_t maxAlignOfTypeCounts_v = 1;
-
-    template<>
-    inline constexpr std::size_t maxAlignOfTypeCounts_v<ComponentTypeList<>> = 1;
-    
-    template<typename TC0, typename... TCs>
-    inline constexpr std::size_t maxAlignOfTypeCounts_v<ComponentTypeList<TC0, TCs...>> = std::max({ alignof(std::remove_cvref_t<typename TC0::type>), alignof(std::remove_cvref_t<typename TCs::type>)... });
-    
-    template<typename TC>
-    inline void AdvanceOffsetForTypeCount(std::size_t& offset, wIndex newCapacity, std::size_t& outOffset) noexcept
+    template<typename T>
+    inline void AdvanceComponentListLayoutOffset(std::size_t& offset, wIndex newCapacity, std::size_t& outOffset) noexcept
     {
-        using T = typename TC::type;
-        constexpr wIndex N = TC::count;
-
         offset = wUtils::AlignUp(offset, alignof(T));
         outOffset = offset;
-        offset += newCapacity * N * sizeof(T);
+        offset += newCapacity * sizeof(T);
     }
 
-    template<typename... TCs, std::size_t... Is>
-    inline void BuildTypeCountLayoutImpl(std::size_t& offset, wIndex newCapacity, std::size_t* offsets, std::index_sequence<Is...>) noexcept { (AdvanceOffsetForTypeCount<TCs>(offset, newCapacity, offsets[Is]), ...); }
+    template<typename... Ts, std::size_t... Is>
+    inline void BuildComponentListLayoutImpl(std::size_t& offset, wIndex newCapacity, std::size_t* offsets, std::index_sequence<Is...>) noexcept { (AdvanceComponentListLayoutOffset<Ts>(offset, newCapacity, offsets[Is]), ...); }
 
-    template<typename TC>
-    concept TypeCountLike = requires
+    template<typename T0, typename... Ts>
+    [[nodiscard]] inline std::size_t BuildComponentListLayoutFromTypes(wIndex newCapacity, std::size_t* offsets) noexcept
     {
-        typename TC::type;
-        {
-            TC::count
-        }
-        -> std::convertible_to<wIndex>;
-    };
-
-    template<TypeCountLike TC0, TypeCountLike... TCs>
-    [[nodiscard]] inline std::size_t BuildTypeCountLayout(wIndex newCapacity, std::size_t* offsets) noexcept
-    {
-        using T0 = typename TC0::type;
-        constexpr wIndex N0 = TC0::count;
-
-        std::size_t offset = newCapacity * N0 * sizeof(T0);
-        BuildTypeCountLayoutImpl<TCs...>(offset, newCapacity, offsets, std::index_sequence_for<TCs...>{});
+        std::size_t offset = newCapacity * sizeof(T0);
+        BuildComponentListLayoutImpl<Ts...>(offset, newCapacity, offsets, std::index_sequence_for<Ts...>{});
         return offset;
     }
 
     template<typename List>
-    struct BuildTypeCountLayoutFromList;
+    struct BuildComponentListLayoutFromList;
 
-    template<typename TC0, typename... TCs>
-    struct BuildTypeCountLayoutFromList<wCore::ComponentTypeList<TC0, TCs...>>
+    template<typename T0, typename... Ts>
+    struct BuildComponentListLayoutFromList<wCore::ComponentTypeList<T0, Ts...>>
     {
         static std::size_t Run(wIndex newCapacity, std::size_t* offsets) noexcept
         {
-            return BuildTypeCountLayout<TC0, TCs...>(newCapacity, offsets);
+            return BuildComponentListLayoutFromTypes<T0, Ts...>(newCapacity, offsets);
         }
     };
 
     template<typename List>
-    [[nodiscard]] inline std::size_t BuildTypeCountLayout(wIndex newCapacity, std::size_t* offsets) noexcept
-    {
-        return BuildTypeCountLayoutFromList<List>::Run(newCapacity, offsets);
-    }
+    [[nodiscard]] inline std::size_t BuildComponentListLayout(wIndex newCapacity, std::size_t* offsets) noexcept { return BuildComponentListLayoutFromList<List>::Run(newCapacity, offsets); }
 
     template<typename List, typename T>
-    [[nodiscard]] static std::size_t GetOffset(const std::size_t* offsets) noexcept
+    [[nodiscard]] static std::size_t ComponentListGetOffset(const std::size_t* offsets) noexcept
     {
-        constexpr wIndex idx = IndexOfTypeCount_v<T, List>;
+        constexpr wIndex idx = IndexOf_v<T, List>;
         if constexpr (idx)
         {
             return offsets[idx - 1];

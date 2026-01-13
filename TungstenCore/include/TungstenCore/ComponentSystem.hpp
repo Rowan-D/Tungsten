@@ -70,21 +70,13 @@ namespace wCore
         template<typename T>
         void ReserveComponents(SceneIndex sceneIndex, wIndex minCapacity)
         {
-            const SceneIndex componentListIndex = m_sceneList.GetDense<SceneListSchema, SceneIndex>(m_sceneMemory, sceneIndex - 1) * componentListCount_v<ComponentKindTag<T>> + componentListIndex_v<T>;
-            ComponentListHeader<ComponentListLayout<ComponentKindTag<T>>, ComponentIndex>& componentListHeader = m_sceneList.GetDense<SceneListSchema, ComponentListHeader<ComponentListLayout<ComponentKindTag<T>>, ComponentIndex>>(m_sceneMemory)[componentListIndex];
-            if (minCapacity > componentListHeader.template Capacity<SceneListSchema>())
+            const SceneIndex sceneDenseIndex = m_sceneList.GetDense<SceneListSchema, SceneIndex>(m_sceneMemory, sceneIndex - 1);
+            using KindTag = ComponentKindTag<T>;
+            ComponentHeader<KindTag>& componentHeader = m_sceneList.GetDense<SceneListSchema, SceneComponentHeader<KindTag>>(m_sceneMemory, sceneDenseIndex)[componentListIndex_v<T>];
+            if (minCapacity > componentHeader.template Capacity<SceneListSchema>())
             {
-            //    componentListHeader.template IncreaseCapacity<ComponentListSchema<T>>(m_sceneList.Get<SceneListSchema, ComponentBuffer<ComponentListLayout<ComponentKindTag<T>>>>(m_sceneMemory)[sceneDenseIndex], minCapacity);
+                componentHeader.template IncreaseCapacity<ComponentSchema<T>>(m_sceneList.GetDense<SceneListSchema, SceneComponentBuffer<KindTag>>(m_sceneMemory, sceneDenseIndex)[componentListIndex_v<T>], minCapacity);
             }
-
-            //const wIndex componentListIndex = m_sceneList.Get<SceneListSchema, ComponentIndex>(sceneDenseIndex)[sceneIndex - 1] * componentSetup.pageListCount + componentListIndex_v<T>;
-
-
-            //ComponentListHeader<ComponentListLayout<ComponentKindTag<T>>, ComponentIndex>& componentListHeader = m_sceneList.Get<SceneListSchema, ComponentListHeader<ComponentListLayout<ComponentKindTag<T>>, ComponentIndex>>(m_sceneMemory)[sceneDenseIndex];
-            //if (minCapacity > componentListHeader.template Capacity<SceneListSchema>())
-            //{
-            //    componentListHeader.template IncreaseCapacity<ComponentListSchema<T>>(m_sceneList.Get<SceneListSchema, ComponentBuffer<ComponentListLayout<ComponentKindTag<T>>>>(m_sceneMemory)[sceneDenseIndex], minCapacity);
-            //}
         }
 
         template<typename T>
@@ -290,52 +282,59 @@ namespace wCore
         Application& m_app;
 
         template<typename KindTag>
-        using ComponentListLayout = ComponentLayout<KindTag, 1>;
+        using ComponentLayout = ComponentListLayout<KindTag, 1>;
+        
+        template<typename KindTag>
+        using ComponentBuffer = ComponentListBuffer<ComponentLayout<KindTag>>;
+        
+        template<typename KindTag>
+        using ComponentHeader = ComponentListHeader<ComponentLayout<KindTag>, ComponentIndex>;
+
+        template<typename KindTag>
+        using SceneComponentBuffer = std::array<ComponentBuffer<KindTag>, componentListCount_v<KindTag>>;
+        
+        template<typename KindTag>
+        using SceneComponentHeader = std::array<ComponentHeader<KindTag>, componentListCount_v<KindTag>>;
 
         template<typename T>
         struct ComponentStoragePolicy
         {
             template<typename List>
-            static inline void Relocate(const ComponentBuffer<ComponentListLayout<T>> data, std::byte* newMemory, std::size_t* offsets, wIndex denseCount) noexcept
+            static inline void Relocate(const ComponentListBuffer<ComponentLayout<T>> data, std::byte* newMemory, std::size_t* offsets, wIndex denseCount) noexcept
             {
             }
         };
 
         template<typename T>
-        using ComponentListSchema = ComponentSchema<
-            ComponentTypeList<
-                TypeCount<T, 1>
-            >,
+        using ComponentSchema = ComponentListSchema<
+            ComponentTypeList<T>,
             ComponentTypeList<>,
             ComponentStoragePolicy<T>,
             componentPageSize_v<T>
         >;
 
-        using SceneListLayout = ComponentLayout<SlotListTag, 5>;
+        using SceneListLayout = ComponentListLayout<SlotListTag, 5>;
 
         struct SceneStoragePolicy
         {
             template<typename List>
-            static inline void Construct(ComponentBuffer<SceneListLayout>& data, wIndex denseIndex)
+            static inline void Construct(ComponentListBuffer<SceneListLayout>& data, wIndex denseIndex) noexcept
             {
-                const std::size_t sceneStartComponentIndex = denseIndex * componentSetup.slotListCount;
-                const std::size_t sceneStartPageIndex = denseIndex * componentSetup.pageListCount;
-
-                std::memset(data.Get<List, ComponentBuffer<ComponentListLayout<SlotListTag>>>() + sceneStartComponentIndex, 0, sizeof(ComponentBuffer<ComponentListLayout<SlotListTag>>) * componentSetup.slotListCount);
-                std::memset(data.Get<List, ComponentBuffer<ComponentListLayout<PageListTag>>>() + sceneStartPageIndex, 0, sizeof(ComponentBuffer<ComponentListLayout<PageListTag>>) * componentSetup.pageListCount);
-                std::memset(data.Get<List, ComponentListHeader<ComponentListLayout<SlotListTag>, ComponentIndex>>() + sceneStartComponentIndex, 0, sizeof(ComponentListHeader<ComponentListLayout<SlotListTag>, ComponentIndex>) * componentSetup.slotListCount);
-                std::memset(data.Get<List, ComponentListHeader<ComponentListLayout<PageListTag>, ComponentIndex>>() + sceneStartPageIndex, 0, sizeof(ComponentListHeader<ComponentListLayout<PageListTag>, ComponentIndex>) * componentSetup.pageListCount);
+                std::memset(data.Get<List, SceneComponentBuffer<SlotListTag>>() + denseIndex, 0, sizeof(SceneComponentBuffer<SlotListTag>));
+                std::memset(data.Get<List, SceneComponentBuffer<PageListTag>>() + denseIndex, 0, sizeof(SceneComponentBuffer<PageListTag>));
+                std::memset(data.Get<List, SceneComponentHeader<SlotListTag>>() + denseIndex, 0, sizeof(SceneComponentHeader<SlotListTag>));
+                std::memset(data.Get<List, SceneComponentHeader<PageListTag>>() + denseIndex, 0, sizeof(SceneComponentHeader<PageListTag>));
                 std::construct_at(data.Get<List, SceneData>() + denseIndex);
             }
 
             template<typename List>
-            static inline void Relocate(const ComponentBuffer<SceneListLayout>& data, std::byte* newMemory, std::size_t* offsets, wIndex denseCount) noexcept
+            static inline void Relocate(const ComponentListBuffer<SceneListLayout>& data, std::byte* newMemory, std::size_t* offsets, wIndex denseCount) noexcept
             {
-                std::memcpy(newMemory + GetOffset<List, ComponentBuffer<ComponentListLayout<SlotListTag>>>(offsets), data.Get<List, ComponentBuffer<ComponentListLayout<SlotListTag>>>(), denseCount * componentSetup.slotListCount * sizeof(ComponentBuffer<ComponentListLayout<SlotListTag>>));
-                std::memcpy(newMemory + GetOffset<List, ComponentBuffer<ComponentListLayout<SlotListTag>>>(offsets), data.Get<List, ComponentBuffer<ComponentListLayout<PageListTag>>>(), denseCount * componentSetup.pageListCount * sizeof(ComponentBuffer<ComponentListLayout<PageListTag>>));
-                std::memcpy(newMemory + GetOffset<List, ComponentListHeader<ComponentListLayout<SlotListTag>, ComponentIndex>>(offsets), data.Get<List, ComponentListHeader<ComponentListLayout<SlotListTag>, ComponentIndex>>(), denseCount * componentSetup.slotListCount * sizeof(ComponentListHeader<ComponentListLayout<SlotListTag>, ComponentIndex>));
-                std::memcpy(newMemory + GetOffset<List, ComponentListHeader<ComponentListLayout<SlotListTag>, ComponentIndex>>(offsets), data.Get<List, ComponentListHeader<ComponentListLayout<PageListTag>, ComponentIndex>>(), denseCount * componentSetup.pageListCount * sizeof(ComponentListHeader<ComponentListLayout<PageListTag>, ComponentIndex>));
-                std::memcpy(newMemory + GetOffset<List, SceneData>(offsets), data.Get<List, SceneData>(), denseCount * sizeof(SceneData));
+                std::memcpy(newMemory + ComponentListGetOffset<List, SceneComponentBuffer<SlotListTag>>(offsets), data.Get<List, SceneComponentBuffer<SlotListTag>>(), denseCount * sizeof(SceneComponentBuffer<SlotListTag>));
+                std::memcpy(newMemory + ComponentListGetOffset<List, SceneComponentBuffer<PageListTag>>(offsets), data.Get<List, SceneComponentBuffer<PageListTag>>(), denseCount * sizeof(SceneComponentBuffer<PageListTag>));
+                std::memcpy(newMemory + ComponentListGetOffset<List, SceneComponentHeader<SlotListTag>>(offsets), data.Get<List, SceneComponentHeader<SlotListTag>>(), denseCount * sizeof(SceneComponentHeader<SlotListTag>));
+                std::memcpy(newMemory + ComponentListGetOffset<List, SceneComponentHeader<PageListTag>>(offsets), data.Get<List, SceneComponentHeader<PageListTag>>(), denseCount * sizeof(SceneComponentHeader<PageListTag>));
+                std::memcpy(newMemory + ComponentListGetOffset<List, SceneData>(offsets), data.Get<List, SceneData>(), denseCount * sizeof(SceneData));
             }
 
             static constexpr wIndex InitialCapacity = 8;
@@ -349,19 +348,19 @@ namespace wCore
             }
         };
 
-        using SceneListSchema = ComponentSchema<
+        using SceneListSchema = ComponentListSchema<
             ComponentTypeList<
-                TypeCount<ComponentBuffer<ComponentListLayout<SlotListTag>>, componentListCount_v<SlotListTag>>,
-                TypeCount<ComponentBuffer<ComponentListLayout<PageListTag>>, componentListCount_v<PageListTag>>
+                SceneComponentBuffer<SlotListTag>,
+                SceneComponentBuffer<PageListTag>
             >,
             ComponentTypeList<
-                TypeCount<ComponentListHeader<ComponentListLayout<SlotListTag>, ComponentIndex>, componentListCount_v<SlotListTag>>,
-                TypeCount<ComponentListHeader<ComponentListLayout<PageListTag>, ComponentIndex>, componentListCount_v<PageListTag>>,
-                TypeCount<SceneData, 1>
+                SceneComponentHeader<SlotListTag>,
+                SceneComponentHeader<PageListTag>,
+                SceneData
             >,
             SceneStoragePolicy
         >;
-        ComponentBuffer<SceneListLayout> m_sceneMemory;
+        ComponentListBuffer<SceneListLayout> m_sceneMemory;
         ComponentListHeader<SceneListLayout, SceneIndex> m_sceneList;
     };
 }

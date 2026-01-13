@@ -58,19 +58,19 @@ namespace wCore
     inline constexpr wIndex componentListIndex_v = componentSetup.listIndexes[componentTypeIndexOf_v<T> - ComponentTypeIndexStart];
 
     template<typename Layout>
-    struct ComponentBuffer
+    struct ComponentListBuffer
     {
         template<typename List, typename T>
         [[nodiscard]] inline T* Get() noexcept
         {
-            constexpr wIndex idx = IndexOfTypeCount_v<T, List>;
+            constexpr wIndex idx = IndexOf_v<T, List>;
             return static_cast<T*>(ptrs[idx]);
         }
 
         template<typename List, typename T>
         [[nodiscard]] inline const T* Get() const noexcept
         {
-            constexpr wIndex idx = IndexOfTypeCount_v<T, List>;
+            constexpr wIndex idx = IndexOf_v<T, List>;
             return static_cast<const T*>(ptrs[idx]);
         }
 
@@ -85,10 +85,10 @@ namespace wCore
     struct ComponentListHeader<Layout, IndexT>
     {
         template<typename Schema>
-        using TypeList = Concat_t<typename Schema::Hot, ComponentTypeList<TypeCount<IndexT, 1>, TypeCount<ComponentGeneration, 1>>, typename Schema::Cold>;
+        using TypeList = Concat_t<typename Schema::Hot, ComponentTypeList<IndexT, ComponentGeneration>, typename Schema::Cold>;
         
         template<typename Schema>
-        void Reserve(ComponentBuffer<Layout>& data, wIndex minCapacity)
+        void Reserve(ComponentListBuffer<Layout>& data, wIndex minCapacity)
         {
             if (minCapacity > capacity)
             {
@@ -97,7 +97,7 @@ namespace wCore
         }
 
         template<typename Schema>
-        [[nodiscard]] ComponentListHandle<IndexT> Create(ComponentBuffer<Layout>& data)
+        [[nodiscard]] ComponentListHandle<IndexT> Create(ComponentListBuffer<Layout>& data)
         {
             if (freeList.Empty())
             {
@@ -126,42 +126,42 @@ namespace wCore
         }
 
         template<typename Schema>
-        [[nodiscard]] inline bool Exists(const ComponentBuffer<Layout> data, ComponentListHandle<IndexT> handle) const noexcept { return handle.index <= slotCount && handle.generation == Data<Schema, ComponentGeneration>(data)[handle.index - 1]; }
+        [[nodiscard]] inline bool Exists(const ComponentListBuffer<Layout> data, ComponentListHandle<IndexT> handle) const noexcept { return handle.index <= slotCount && handle.generation == Data<Schema, ComponentGeneration>(data)[handle.index - 1]; }
 
         template<typename Schema, typename T>
-        [[nodiscard]] inline T& Get(ComponentBuffer<Layout>& data, IndexT index) noexcept
+        [[nodiscard]] inline T& Get(ComponentListBuffer<Layout>& data, IndexT index) noexcept
         {
             const IndexT denseIndex = GetDense<Schema, IndexT>(data, index);
             return Data<Schema, T>(data)[denseIndex];
         }
 
         template<typename Schema, typename T>
-        [[nodiscard]] inline const T& Get(const ComponentBuffer<Layout>& data, IndexT index) const noexcept
+        [[nodiscard]] inline const T& Get(const ComponentListBuffer<Layout>& data, IndexT index) const noexcept
         {
             const IndexT denseIndex = GetDense<Schema, IndexT>(data, index);
             return Data<Schema, T>(data)[denseIndex];
         }
 
         template<typename Schema, typename T>
-        [[nodiscard]] inline T& GetDense(ComponentBuffer<Layout>& data, IndexT denseIndex) noexcept
+        [[nodiscard]] inline T& GetDense(ComponentListBuffer<Layout>& data, IndexT denseIndex) noexcept
         {
             return Data<Schema, T>(data)[denseIndex];
         }
 
         template<typename Schema, typename T>
-        [[nodiscard]] inline const T& GetDense(const ComponentBuffer<Layout>& data, IndexT denseIndex) const noexcept
+        [[nodiscard]] inline const T& GetDense(const ComponentListBuffer<Layout>& data, IndexT denseIndex) const noexcept
         {
             return Data<Schema, T>(data)[denseIndex];
         }
 
         template<typename Schema, typename T>
-        [[nodiscard]] inline T* Data(ComponentBuffer<Layout>& data) noexcept
+        [[nodiscard]] inline T* Data(ComponentListBuffer<Layout>& data) noexcept
         {
             return data.template Get<TypeList<Schema>, T>();
         }
 
         template<typename Schema, typename T>
-        [[nodiscard]] inline const T* Data(const ComponentBuffer<Layout>& data) const noexcept
+        [[nodiscard]] inline const T* Data(const ComponentListBuffer<Layout>& data) const noexcept
         {
             return data.template Get<TypeList<Schema>, T>();
         }
@@ -172,17 +172,17 @@ namespace wCore
         [[nodiscard]] inline wIndex Capacity() const noexcept { return capacity; }
         
         template<typename Schema>
-        inline void IncreaseCapacity(ComponentBuffer<Layout>& data, wIndex minCapacity) { Reallocate<Schema>(data, minCapacity); }
+        inline void IncreaseCapacity(ComponentListBuffer<Layout>& data, wIndex minCapacity) { Reallocate<Schema>(data, minCapacity); }
 
         template<typename Schema>
-        void Reallocate(ComponentBuffer<Layout>& data, wIndex newCapacity)
+        void Reallocate(ComponentListBuffer<Layout>& data, wIndex newCapacity)
         {
             capacity = newCapacity;
 
             std::size_t offsets[TypeList<Schema>::count - 1];
-            const std::size_t offset = BuildTypeCountLayout<TypeList<Schema>>(newCapacity, offsets);
+            const std::size_t offset = BuildComponentListLayout<TypeList<Schema>>(newCapacity, offsets);
 
-            constexpr std::size_t alignment = maxAlignOfTypeCounts_v<TypeList<Schema>>;
+            constexpr std::size_t alignment = wUtils::maxAlignOf_v<TypeList<Schema>>;
             if (data.ptrs[0])
             {
                 std::byte* newMemory = static_cast<std::byte*>(
@@ -191,10 +191,10 @@ namespace wCore
 
                 if (slotGenerationCount)
                 {
-                    std::memcpy(newMemory + GetOffset<TypeList<Schema>, ComponentGeneration>(offsets), Data<Schema, ComponentGeneration>(data), slotGenerationCount * sizeof(ComponentGeneration));
+                    std::memcpy(newMemory + ComponentListGetOffset<TypeList<Schema>, ComponentGeneration>(offsets), Data<Schema, ComponentGeneration>(data), slotGenerationCount * sizeof(ComponentGeneration));
                     if (slotCount)
                     {
-                        std::memcpy(newMemory + GetOffset<TypeList<Schema>, IndexT>(offsets), Data<Schema, IndexT>(data), slotCount * sizeof(IndexT));
+                        std::memcpy(newMemory + ComponentListGetOffset<TypeList<Schema>, IndexT>(offsets), Data<Schema, IndexT>(data), slotCount * sizeof(IndexT));
                         if (denseCount)
                         {
                             Schema::StoragePolicy::template Relocate<TypeList<Schema>>(data, newMemory, offsets, denseCount);
@@ -229,7 +229,7 @@ namespace wCore
     struct ComponentListHeader<Layout, IndexT>
     {
         template<typename Schema>
-        using TypeList = Concat_t<typename Schema::Hot, ComponentTypeList<TypeCount<ComponentGeneration, 1>>, typename Schema::Cold>;
+        using TypeList = Concat_t<typename Schema::Hot, ComponentTypeList<ComponentGeneration>, typename Schema::Cold>;
 
         [[nodiscard]] inline wIndex Count() const noexcept { return slotCount - freeList.Count(); }
 
@@ -237,10 +237,10 @@ namespace wCore
         [[nodiscard]] inline wIndex Capacity() const noexcept { return pageCount * Schema::pageSize; }
 
         template<typename Schema>
-        inline void IncreaseCapacity(ComponentBuffer<Layout>& data, wIndex minCapacity) { Reallocate(data, wUtils::IntDivCeil(minCapacity, Schema::pageSize)); }
+        inline void IncreaseCapacity(ComponentListBuffer<Layout>& data, wIndex minCapacity) { Reallocate(data, wUtils::IntDivCeil(minCapacity, Schema::pageSize)); }
         
         template<typename Schema>
-        void Reallocate(ComponentBuffer<Layout>& data, wIndex newPageCount)
+        void Reallocate(ComponentListBuffer<Layout>& data, wIndex newPageCount)
         {
         }
 
