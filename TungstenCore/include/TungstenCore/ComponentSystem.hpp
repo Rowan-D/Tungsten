@@ -300,7 +300,7 @@ namespace wCore
         struct ComponentStoragePolicy
         {
             template<typename List>
-            static inline void Relocate(const ComponentListBuffer<ComponentLayout<T>> data, std::byte* newMemory, std::size_t* offsets, wIndex denseCount) noexcept
+            static inline void Relocate(const ComponentBuffer<ComponentKindTag<T>> data, std::byte* newMemory, std::size_t* offsets, wIndex denseCount) noexcept
             {
             }
         };

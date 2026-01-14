@@ -126,10 +126,7 @@ namespace wCore
     template<typename T0, typename... Ts>
     struct BuildComponentListLayoutFromList<wCore::ComponentTypeList<T0, Ts...>>
     {
-        static std::size_t Run(wIndex newCapacity, std::size_t* offsets) noexcept
-        {
-            return BuildComponentListLayoutFromTypes<T0, Ts...>(newCapacity, offsets);
-        }
+        [[nodiscard]] static inline std::size_t Run(wIndex newCapacity, std::size_t* offsets) noexcept { return BuildComponentListLayoutFromTypes<T0, Ts...>(newCapacity, offsets); }
     };
 
     template<typename List>
